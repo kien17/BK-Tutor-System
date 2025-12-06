@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
     const navigate = useNavigate();
+    // Thêm state để lưu trạng thái đăng nhập
+    const [isLoggedIn, setIsLoggedIn] = useState(false); 
+
+    useEffect(() => {
+        // Kiểm tra token trong localStorage
+        const token = localStorage.getItem('token');
+        setIsLoggedIn(!!token); // !!token sẽ trả về true nếu token tồn tại (user đã đăng nhập)
+    }, []);
 
     return (
         <div style={{fontFamily: 'Segoe UI, sans-serif'}}>
@@ -17,7 +25,7 @@ const Home = () => {
                 justifyContent: 'center',
                 position: 'relative'
             }}>
-                {/* Lớp phủ màu đen mờ để chữ nổi bật */}
+                {/* Lớp phủ màu đen mờ */}
                 <div style={{position:'absolute', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)'}}></div>
                 
                 <div style={{position:'relative', zIndex:1, textAlign:'center', color:'white', padding: '0 20px'}}>
@@ -28,19 +36,24 @@ const Home = () => {
                         Kết nối Sinh viên và Giảng viên - Đặt lịch tư vấn - Tra cứu tài liệu học tập
                         chất lượng cao tại Đại học Bách Khoa.
                     </p>
-                    <button 
-                        onClick={() => navigate('/login')}
-                        style={{
-                            padding: '15px 40px', fontSize: '18px', fontWeight: 'bold',
-                            background: '#004aad', color: 'white', border: 'none', borderRadius: '30px',
-                            cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,74,173,0.4)',
-                            transition: 'transform 0.2s'
-                        }}
-                        onMouseOver={e => e.target.style.transform = 'scale(1.05)'}
-                        onMouseOut={e => e.target.style.transform = 'scale(1)'}
-                    >
-                        BẮT ĐẦU NGAY 🚀
-                    </button>
+                    
+                    {/* --- ĐIỀU KIỆN MỚI: CHỈ HIỆN NÚT NẾU CHƯA ĐĂNG NHẬP --- */}
+                    {!isLoggedIn && (
+                        <button 
+                            onClick={() => navigate('/login')}
+                            style={{
+                                padding: '15px 40px', fontSize: '18px', fontWeight: 'bold',
+                                background: '#004aad', color: 'white', border: 'none', borderRadius: '30px',
+                                cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,74,173,0.4)',
+                                transition: 'transform 0.2s'
+                            }}
+                            onMouseOver={e => e.target.style.transform = 'scale(1.05)'}
+                            onMouseOut={e => e.target.style.transform = 'scale(1)'}
+                        >
+                            BẮT ĐẦU NGAY 🚀
+                        </button>
+                    )}
+                    {/* ---------------------------------------------------- */}
                 </div>
             </div>
 
@@ -81,7 +94,7 @@ const Home = () => {
     );
 };
 
-// CSS phụ trợ
+// CSS phụ trợ (Giữ nguyên)
 const cardStyle = {
     background: 'white', padding: '30px', borderRadius: '12px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.08)', textAlign: 'center',
