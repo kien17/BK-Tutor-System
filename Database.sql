@@ -131,3 +131,25 @@ INSERT INTO Users (Username, FullName, Email, PasswordHash, Role, SchoolID) VALU
 GO
 
 PRINT '✅ DATABASE SETUP COMPLETED SUCCESSFULLY!';
+
+-- 9. TẠO BẢNG REVIEWS (Phản hồi & Đánh giá Tutor)
+IF OBJECT_ID('Reviews', 'U') IS NOT NULL DROP TABLE Reviews;
+GO
+
+CREATE TABLE Reviews (
+    ReviewID INT IDENTITY(1,1) PRIMARY KEY,
+    BookingID INT NOT NULL,                     -- Đánh giá buổi học nào
+    TutorID INT NOT NULL,                       -- Tutor được đánh giá
+    StudentID INT NOT NULL,                     -- Người đánh giá
+    Rating INT NOT NULL CHECK (Rating BETWEEN 1 AND 5),
+    Comment NVARCHAR(1000),                     -- Nội dung phản hồi
+    CreatedAt DATETIME DEFAULT GETDATE(),
+
+    -- Không cho mỗi student đánh giá 1 booking nhiều lần
+    CONSTRAINT UQ_Review_Once UNIQUE (BookingID, StudentID),
+
+    FOREIGN KEY (BookingID) REFERENCES AcademicBookings(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (TutorID) REFERENCES Users(UserID),
+    FOREIGN KEY (StudentID) REFERENCES Users(UserID)
+);
+GO

@@ -800,6 +800,133 @@ app.delete('/api/admin/reset-semester', async (req, res) => {
     }
 });
 
+//Student gửi đánh giá sau buổi học
+app.post('/api/reviews', async (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    try {
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+        const studentId = decoded.id;
+
+        const { bookingId, rating, comment } = req.body;
+
+        // 1. Kiểm tra booking có tồn tại và thuộc student này không
+        const bookingData = await sql.query`
+            SELECT * FROM AcademicBookings 
+            WHERE BookingID = ${bookingId} AND StudentID = ${studentId}
+        `;
+
+        if (bookingData.recordset.length === 0) {
+            return res.status(400).json({ message: "Bạn không có quyền đánh giá booking này!" });
+        }
+
+        const booking = bookingData.recordset[0];
+        const tutorId = booking.TutorID;
+
+        // 2. Tạo review
+        await sql.query`
+            INSERT INTO Reviews (BookingID, TutorID, StudentID, Rating, Comment)
+            VALUES (${bookingId}, ${tutorId}, ${studentId}, ${rating}, ${comment})
+        `;
+
+        res.json({ message: "Gửi đánh giá thành công!" });
+
+    } catch (err) {
+        if (err.message.includes("UQ_Review_Once")) {
+            return res.status(400).json({ message: "Bạn đã đánh giá buổi học này rồi!" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//Lấy tất cả review của 1 Tutor
+app.get('/api/tutors/:id/reviews', async (req, res) => {
+    const tutorId = req.params.id;
+
+    try {
+        const reviews = await sql.query`
+            SELECT R.*, U.FullName AS StudentName
+            FROM Reviews R
+            JOIN Users U ON R.StudentID = U.UserID
+            WHERE R.TutorID = ${tutorId}
+            ORDER BY R.CreatedAt DESC
+        `;
+
+        const avgRating = await sql.query`
+            SELECT AVG(CAST(Rating AS FLOAT)) AS AvgRating
+            FROM Reviews
+            WHERE TutorID = ${tutorId}
+        `;
+
+        res.json({
+            tutorId,
+            averageRating: avgRating.recordset[0].AvgRating || 0,
+            reviews: reviews.recordset
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//Student xem lại tất cả đánh giá mình đã gửi
+app.get('/api/my-reviews', async (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    try {
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+        const studentId = decoded.id;
+
+        const result = await sql.query`
+            SELECT R.*, U.FullName AS TutorName
+            FROM Reviews R
+            JOIN Users U ON R.TutorID = U.UserID
+            WHERE StudentID = ${studentId}
+            ORDER BY CreatedAt DESC
+        `;
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//Admin xem tất cả review hệ thống
+app.get('/api/admin/reviews', async (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    try {
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+        // Check Admin
+        const roleCheck = await sql.query`
+            SELECT Role FROM Users WHERE UserID = ${decoded.id}
+        `;
+        if (roleCheck.recordset[0].Role !== 'admin') {
+            return res.status(403).json({ message: "Bạn không có quyền truy cập!" });
+        }
+
+        const result = await sql.query`
+            SELECT R.*, 
+                   Stu.FullName AS StudentName,
+                   Tu.FullName AS TutorName
+            FROM Reviews R
+            JOIN Users Stu ON R.StudentID = Stu.UserID
+            JOIN Users Tu  ON R.TutorID =  Tu.UserID
+            ORDER BY CreatedAt DESC
+        `;
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Chạy Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
