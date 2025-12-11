@@ -10,7 +10,8 @@ GO
 
 USE BKTutorDB;
 GO
-
+select * from Users
+delete from AcademicBookings where BookingID = 1004
 -- 2. XÓA BẢNG CŨ (Để làm sạch dữ liệu, theo thứ tự ngược lại của quan hệ)
 -- Nếu bạn muốn giữ dữ liệu cũ thì comment đoạn này lại
 IF OBJECT_ID('Notifications', 'U') IS NOT NULL DROP TABLE Notifications;
@@ -127,7 +128,7 @@ GO
 INSERT INTO Users (Username, FullName, Email, PasswordHash, Role, SchoolID) VALUES 
 (N'Admin System', N'Quản Trị Viên', 'admin@bktutor.com', '$2b$10$wY.d.j.z.x.y.A.B.C.D.E.F.G.H.I.J.K.L.M.N.O.P.Q.R.S.T.U', 'admin', '0000001'),
 (N'Thay Nguyen Van A', N'TS. Nguyễn Văn A', 'tutor@hcmut.edu.vn', '$2b$10$wY.d.j.z.x.y.A.B.C.D.E.F.G.H.I.J.K.L.M.N.O.P.Q.R.S.T.U', 'tutor', '0112233'),
-(N'Sinh Vien K20', N'Trần Văn Sinh Viên', 'student@hcmut.edu.vn', '$2b$10$wY.d.j.z.x.y.A.B.C.D.E.F.G.H.I.J.K.L.M.N.O.P.Q.R.S.T.U', 'student', '2110001');
+(N'Sinh Vien', N'Trần Văn Sinh Viên', 'student@hcmut.edu.vn', '$2b$10$wY.d.j.z.x.y.A.B.C.D.E.F.G.H.I.J.K.L.M.N.O.P.Q.R.S.T.U', 'student', '2110001');
 GO
 
 PRINT '✅ DATABASE SETUP COMPLETED SUCCESSFULLY!';

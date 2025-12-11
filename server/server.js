@@ -927,6 +927,75 @@ app.get('/api/admin/reviews', async (req, res) => {
     }
 });
 
+// Student xem review theo BookingID
+app.get('/api/reviews/:bookingId', async (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ message: "Chưa đăng nhập" });
+
+    try {
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+        const studentId = decoded.id;
+        const bookingId = req.params.bookingId;
+
+        // Kiểm tra booking có thuộc student này không
+        const bookingData = await sql.query`
+            SELECT * FROM AcademicBookings 
+            WHERE BookingID = ${bookingId} AND StudentID = ${studentId}
+        `;
+        if (bookingData.recordset.length === 0) {
+            return res.status(403).json({ message: "Bạn không có quyền xem đánh giá này!" });
+        }
+
+        const reviewData = await sql.query`
+            SELECT R.*, U.FullName AS TutorName
+            FROM Reviews R
+            JOIN Users U ON R.TutorID = U.UserID
+            WHERE R.BookingID = ${bookingId}
+        `;
+
+        if (reviewData.recordset.length === 0) {
+            return res.status(404).json({ message: "Chưa có đánh giá cho booking này" });
+        }
+
+        res.json(reviewData.recordset[0]); // Trả về review đầu tiên
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/tutors/:id/reviews-with-booking', async (req, res) => {
+    const tutorId = req.params.id;
+
+    try {
+        const result = await sql.query`
+            SELECT 
+                R.ReviewID, R.BookingID, R.Rating, R.Comment, R.CreatedAt,
+                U.FullName AS StudentName,
+                B.WeekNumber, B.DayOfWeek, B.StartPeriod, B.EndPeriod, B.Topic
+            FROM Reviews R
+            JOIN Users U ON R.StudentID = U.UserID
+            JOIN AcademicBookings B ON R.BookingID = B.BookingID
+            WHERE R.TutorID = ${tutorId}
+            ORDER BY R.CreatedAt DESC
+        `;
+
+        const avg = await sql.query`
+            SELECT AVG(CAST(Rating AS FLOAT)) AS AvgRating
+            FROM Reviews WHERE TutorID = ${tutorId}
+        `;
+
+        res.json({
+            averageRating: avg.recordset[0].AvgRating || 0,
+            reviews: result.recordset
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Chạy Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
