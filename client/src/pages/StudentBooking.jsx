@@ -212,7 +212,7 @@ const StudentBooking = () => {
         {/* Tab */}
         <div style={{ marginBottom: 20, borderBottom: '1px solid #ddd', display: 'flex', gap: 10 }}>
             <button onClick={() => setActiveTab('booking')} style={getTabStyle(activeTab === 'booking')}>📅 Đặt Lịch Tư Vấn</button>
-            <button onClick={() => setActiveTab('history')} style={getTabStyle(activeTab === 'history')}>📜 Lịch Sử Vé</button>
+            <button onClick={() => setActiveTab('history')} style={getTabStyle(activeTab === 'history')}>📜 Lịch Sử buổi tư vấn</button>
         </div>
 
         {activeTab === 'booking' && (

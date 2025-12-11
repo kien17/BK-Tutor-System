@@ -77,7 +77,7 @@ const BookingHistory = ({
                     color: "#28a745",
                     fontSize: 20
                 }}>
-                    🎫 Vé Đang Hoạt Động
+                    Buổi tư vấn đã tham gia
                 </h3>
 
                 {activeBookings.length === 0 ? (

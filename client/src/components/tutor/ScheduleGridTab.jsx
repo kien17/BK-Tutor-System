@@ -176,7 +176,7 @@ const ScheduleGridTab = ({
                                                             opacity: 0.8
                                                         }}
                                                     >
-                                                        {booking.StudentName}
+                                                        {/* {booking.StudentName} */}
                                                     </div>
                                                 </div>
                                             )}
