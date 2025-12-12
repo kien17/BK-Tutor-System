@@ -49,7 +49,7 @@ const Register = () => {
                     <label>Mã số (SV/Tutor):</label>
                     <input 
                         type="text" name="schoolId" 
-                        placeholder="VD: 2110001"
+                        placeholder="VD: 2310001"
                         value={formData.schoolId} onChange={handleChange} required 
                         style={{fontWeight: 'bold', color: '#004aad'}}
                     />

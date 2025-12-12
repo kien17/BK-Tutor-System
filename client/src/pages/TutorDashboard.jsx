@@ -233,7 +233,7 @@ const TutorDashboard = () => {
             {/* TAB 4: XEM ĐÁNH GIÁ - HIỂN THỊ THEO BOOKINGID */}
             {activeTab === 'reviews' && (
                 <div style={{ padding: 20 }}>
-                    <h3 style={{ color: '#d63384', marginBottom: 20 }}>⭐ Đánh Giá Từ Sinh Viên</h3>
+                    <h3 style={{ color: '#d63384', marginBottom: 20 }}>Đánh Giá Từ Sinh Viên</h3>
 
                     {/* Trung bình sao */}
                     <div style={{
@@ -354,7 +354,17 @@ const TutorDashboard = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div><strong>Sinh viên:</strong> {selectedBooking.StudentName}</div>
                         <div><strong>Thời gian:</strong> Thứ {selectedBooking.DayOfWeek}, Tiết {selectedBooking.StartPeriod}</div>
-                        <div><strong>Chủ đề:</strong> {selectedBooking.Topic}</div>
+                        <div 
+                            style={{
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                overflowWrap: "break-word",
+                                lineHeight: "1.5",
+                            }}
+                        >
+                            <strong>Chủ đề:</strong> {selectedBooking.Topic}
+                        </div>
+
                         <div><strong>Hình thức:</strong> <span style={{ color: selectedBooking.MeetingMode === 'Online' ? 'blue' : 'green', fontWeight: 'bold' }}>{selectedBooking.MeetingMode}</span></div>
                         <div>
                             <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 5 }}>Địa điểm / Link Meeting:</label>

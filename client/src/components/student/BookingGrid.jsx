@@ -74,9 +74,10 @@ const BookingGrid = ({
         {/* Legend */}
         <div style={{ display: 'flex', gap: 10, fontSize: 13, marginLeft: 'auto' }}>
           <span style={{ background: '#28a745', width: 15, height: 15, borderRadius: 3 }}></span> Rảnh
-          <span style={{ background: '#ffc107', width: 15, height: 15, borderRadius: 3 }}></span> Đầy
+          <span style={{ background: '#ffc107', width: 15, height: 15, borderRadius: 3 }}></span> Đã có lịch
           <span style={{ background: '#6f42c1', width: 15, height: 15, borderRadius: 3 }}></span> Chờ
           <span style={{ background: '#007bff', width: 15, height: 15, borderRadius: 3 }}></span> Duyệt
+          <span style={{ background: '#6c757d', width: 15, height: 15, borderRadius: 3 }}></span> Đã hủy
         </div>
       </div>
 
