@@ -164,7 +164,7 @@ const ScheduleGridTab = ({
                                             {booking && (
                                                 <div style={{ lineHeight: 1.2 }}>
                                                     <div>
-                                                        {booking.Status === "pending" ? "⏳ Chờ" : "✔ Đã nhận"}
+                                                        {booking.Status === "pending" ? "Đang Chờ Duyệt" : "Đã nhận"}
                                                     </div>
                                                     <div
                                                         style={{

@@ -109,87 +109,59 @@ const AdminReviews = () => {
                 <>
                     {/* Tổng quan điểm trung bình */}
                     <div style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
+                        background: 'white', // đổi nền sang trắng
+                        color: '#004aad',   // màu chữ chính để nổi bật trên nền sáng
                         padding: '30px',
                         borderRadius: '16px',
                         textAlign: 'center',
                         marginBottom: '40px',
-                        boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)' // shadow nhẹ hơn để hợp nền trắng
                     }}>
-                        <h2 style={{ margin: '0 0 12px', fontSize: '56px', fontWeight: 'bold' }}>
+                        <h2 style={{ margin: '0 0 12px 0', fontSize: '56px', fontWeight: 'bold', color: '#004aad' }}>
                             {averageRating}
                         </h2>
-                        <div style={{ fontSize: '36px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '36px', marginBottom: '10px', color: '#ffc107' }}>
                             {renderStars(Math.round(parseFloat(averageRating)))}
                         </div>
-                        <p style={{ fontSize: '18px', margin: 0 }}>
+                        <p style={{ fontSize: '18px', margin: 0, color: '#555' }}>
                             Dựa trên <strong>{reviews.length}</strong> đánh giá từ sinh viên
                         </p>
                     </div>
 
-                    {/* Danh sách đánh giá chi tiết */}
+                    {/* Danh sách đánh giá */}
                     {reviews.length === 0 ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '80px 20px',
-                            background: '#f8f9fa',
-                            borderRadius: '12px',
-                            color: '#666'
-                        }}>
-                            <p style={{ fontSize: '20px', fontStyle: 'italic' }}>
-                                Chưa có đánh giá nào cho giảng viên này.
-                            </p>
-                        </div>
+                        <p style={{ textAlign: 'center', color: '#999', fontStyle: 'italic', padding: 40 }}>
+                            Chưa có đánh giá nào từ sinh viên.
+                        </p>
                     ) : (
-                        <div>
+                        <div > {/* giới hạn chiều rộng */}
                             {reviews.map(review => (
-                                <div
-                                    key={review.ReviewID}
-                                    style={{
-                                        background: 'white',
-                                        border: '1px solid #eee',
-                                        borderRadius: '12px',
-                                        padding: '20px',
-                                        marginBottom: '20px',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'}
-                                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                        <strong style={{ color: '#004aad', fontSize: '17px' }}>
-                                            {review.StudentName || 'Sinh viên ẩn danh'}
-                                        </strong>
-                                        <span style={{ color: '#888', fontSize: '14px' }}>
+                                <div key={review.ReviewID} style={{
+                                    background: 'white',
+                                    border: '1px solid #eee',
+                                    borderRadius: 8,
+                                    padding: 15,
+                                    marginBottom: 15,
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <strong style={{ color: '#004aad' }}>{review.StudentName || 'Sinh viên ẩn danh'}</strong>
+                                        <span style={{ color: '#666', fontSize: 14 }}>
                                             {new Date(review.CreatedAt).toLocaleDateString('vi-VN')}
                                         </span>
                                     </div>
 
-                                    <div style={{ color: '#444', marginBottom: '12px', fontSize: '15px', lineHeight: '1.6' }}>
-                                        <strong>Buổi tư vấn:</strong> Tuần {review.WeekNumber}, {getDayName(review.DayOfWeek)}, 
-                                        Tiết {review.StartPeriod}{review.EndPeriod !== review.StartPeriod ? ` - ${review.EndPeriod}` : ''} <br />
-                                        <strong>Chủ đề:</strong> {review.Topic || 'Không ghi chú'}
+                                    <div style={{ fontSize: 14, color: '#555', marginBottom: 10 }}>
+                                        <strong>Buổi tư vấn:</strong> Tuần {review.WeekNumber}, {getDayName(review.DayOfWeek)}, Tiết {review.StartPeriod}{review.EndPeriod !== review.StartPeriod ? `-${review.EndPeriod}` : ''} <br />
+                                        <strong>Chủ đề:</strong> {review.Topic || 'Không có chủ đề'}
                                     </div>
 
-                                    <div style={{ marginBottom: '12px' }}>
+                                    <div style={{ marginBottom: 8 }}>
                                         {renderStars(review.Rating)}
-                                        <span style={{ marginLeft: '10px', color: '#666', fontWeight: 'bold' }}>
-                                            ({review.Rating}/5)
-                                        </span>
                                     </div>
 
-                                    <p style={{
-                                        margin: 0,
-                                        background: '#f8f9fa',
-                                        padding: '14px',
-                                        borderRadius: '8px',
-                                        lineHeight: '1.7',
-                                        color: '#333',
-                                        borderLeft: '4px solid #004aad'
-                                    }}>
-                                        {review.Comment || <em style={{ color: '#999' }}>Không có nhận xét</em>}
+                                    <p style={{ margin: 0, color: '#333', lineHeight: 1.5 }}>
+                                        {review.Comment || <em style={{ color: '#aaa' }}>Không có nhận xét</em>}
                                     </p>
                                 </div>
                             ))}
