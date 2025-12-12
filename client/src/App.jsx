@@ -12,7 +12,7 @@ import TutorDashboard from './pages/TutorDashboard';
 import StudentBooking from './pages/StudentBooking';
 import Documents from './pages/Documents';
 import Home from './pages/Home';
-
+import AdminReviews from './pages/AdminReviews';
 // Các trang tạm (Placeholder) để test link
 const StudentHome = () => <div style={{padding:40}}><h2>Trang Sinh Viên</h2></div>;
 
@@ -27,7 +27,7 @@ function App() {
         <Route path="/admin/edit-user/:id" element={<AdminEditUser />} />
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        
+        <Route path="/admin/reviews" element={<AdminReviews />} />
         {/* Các trang chính */}
         <Route path="/student" element={<Home />} />
         <Route path="/tutor" element={<TutorDashboard />} />

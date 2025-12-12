@@ -88,6 +88,7 @@ const Navbar = () => {
                 {user && user.role === 'student' && <Link to="/student/booking" className="nav-link">Đăng Ký Tư Vấn</Link>}
                 {user && user.role === 'tutor' && <Link to="/tutor" className="nav-link">Lịch Dạy</Link>}
                 {user && user.role === 'admin' && <Link to="/admin" className="nav-link">Quản Trị</Link>}
+                {user && user.role === 'admin' && <Link to="/admin/reviews" className="nav-link">Phản hồi & Đánh giá</Link>}
                 <Link to="/documents" className="nav-link">Kho Tài Liệu</Link>
             </div>
 
