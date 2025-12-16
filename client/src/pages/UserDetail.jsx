@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard';
 
 const UserDetail = () => {
-    const { id } = useParams(); // Lấy ID từ URL (ví dụ: /user/5)
+    const { id } = useParams();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
 
@@ -18,67 +17,99 @@ const UserDetail = () => {
             return;
         }
 
-        // Gọi API lấy thông tin người dùng cụ thể
         axios.get(`http://localhost:5000/api/users/${id}`, {
             headers: { Authorization: token }
         })
         .then(res => setUser(res.data))
-        .catch(err => alert("Không tìm thấy thông tin người dùng!"));
-    }, [id]);
+        .catch(() => alert("Không tìm thấy thông tin người dùng!"));
+    }, [id, navigate]);
 
-    if (!user) return <div style={{textAlign:'center', marginTop: 50}}>⏳ Đang tải...</div>;
+    if (!user)
+        return (
+            <div className="text-center mt-20 text-gray-500 text-lg">
+                ⏳ Đang tải...
+            </div>
+        );
 
     const formattedDob = user.Dob ? new Date(user.Dob).toLocaleDateString('vi-VN') : 'Chưa cập nhật';
 
-    return (
-        <div className="dashboard-container" style={{maxWidth: '600px'}}>
-            <button onClick={() => navigate('/admin')} style={{marginBottom: '15px', cursor: 'pointer', padding: '5px 10px'}}>
-                ⬅ Quay lại
-            </button>
+    // Role màu sắc
+    const roleColor = {
+        admin: 'bg-red-100 text-red-700',
+        student: 'bg-green-100 text-green-700',
+        tutor: 'bg-blue-100 text-blue-700',
+        pending: 'bg-purple-100 text-purple-700'
+    }[user.Role] || 'bg-gray-100 text-gray-700';
 
-            {/* NÚT SỬA CHỈ HIỆN VỚI ADMIN */}
-            {isAdmin && (
-                    <button 
-                        onClick={() => navigate(`/admin/edit-user/${id}`)}
-                        style={{
-                            background: '#dc3545', color: 'white', border: 'none', 
-                            padding: '8px 15px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold'
-                        }}
-                    >
-                        ✏️ Sửa thông tin (Admin)
-                    </button>
-                )}
+    return (
+        <div className="max-w-[700px] mx-auto my-10 p-6 bg-white rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+
             
-            <h2 style={{borderBottom: '2px solid #004aad', paddingBottom: '10px', marginBottom: '20px'}}>
-                📄 Thông tin chi tiết: {user.FullName || user.Username}
+
+            <h2 className="text-2xl font-bold text-[#004aad] border-b pb-2 mb-6 flex items-center gap-2">
+                Thông tin chi tiết: {user.FullName || user.Username}
             </h2>
 
-            <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                    <div style={{
-                        width: '80px', height: '80px', background: '#ddd', borderRadius: '50%', 
-                        margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '30px'
-                    }}>
-                        👤
-                    </div>
-                    <span className={`role-badge role-${user.Role}`} style={{marginTop: '10px', display: 'inline-block'}}>
-                        {user.Role.toUpperCase()}
-                    </span>
+            {/* Avatar + Role */}
+            <div className="flex flex-col items-center mb-6">
+                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl">
+                    👤
                 </div>
+                <span
+                    className={`mt-2 px-4 py-1 rounded-full text-xs font-bold ${roleColor}`}
+                >
+                    {user.Role.toUpperCase()}
+                </span>
+            </div>
 
-                <table style={{marginTop: 0}}>
-                    <tbody>
-                        <tr><td><strong>ID Hệ thống:</strong></td><td>#{user.UserID}</td></tr>
-                        <tr><td><strong>Mã số (ID):</strong></td><td style={{fontWeight: 'bold'}}>{user.SchoolID || "---"}</td></tr>
-                        <tr><td><strong>Họ và Tên:</strong></td><td>{user.FullName || "---"}</td></tr>
-                        <tr><td><strong>Email:</strong></td><td>{user.Email}</td></tr>
-                        <tr><td><strong>Ngày sinh:</strong></td><td>{formattedDob}</td></tr>
-                        <tr><td><strong>SĐT:</strong></td><td>{user.Phone || "---"}</td></tr>
-                        <tr><td><strong>Quê quán:</strong></td><td>{user.Hometown || "---"}</td></tr>
-                        <tr><td><strong>CCCD:</strong></td><td>{user.CitizenID || "---"}</td></tr>
-                    </tbody>
-                </table>
+            {/* Thông tin chi tiết */}
+            <div className="grid grid-cols-1 gap-4 text-gray-700">
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Mã số (ID):</span>
+                    <span className="font-bold">{user.SchoolID || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Họ và Tên:</span>
+                    <span>{user.FullName || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Email:</span>
+                    <span>{user.Email || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Ngày sinh:</span>
+                    <span>{formattedDob}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Số điện thoại:</span>
+                    <span>{user.Phone || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Quê quán:</span>
+                    <span>{user.Hometown || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">CCCD:</span>
+                    <span>{user.CitizenID || "---"}</span>
+                </div>
+            </div>
+            {/* Header + Back + Edit */}
+            <div className="flex justify-between items-center mt-6">
+                <button
+                    onClick={() => navigate('/admin')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300"
+                >
+                    ⬅ Quay lại
+                </button>
+
+                {isAdmin && (
+                    <button
+                        onClick={() => navigate(`/admin/edit-user/${id}`)}
+                        className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700"
+                    >
+                        Sửa thông tin (Admin)
+                    </button>
+                )}
             </div>
         </div>
     );

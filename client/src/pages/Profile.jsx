@@ -13,86 +13,90 @@ const Profile = () => {
             return;
         }
 
-        // Gọi API lấy thông tin
         axios.get('http://localhost:5000/api/profile', {
-            headers: { Authorization: token } // Gửi token lên để server biết ai đang hỏi
+            headers: { Authorization: token }
         })
         .then(res => setProfile(res.data))
         .catch(err => console.error(err));
-    }, []);
+    }, [navigate]);
 
-    if (!profile) return <div style={{textAlign:'center', marginTop: 50}}>⏳ Đang tải thông tin...</div>;
+    if (!profile)
+        return <div className="text-center mt-20 text-gray-500 text-lg">⏳ Đang tải thông tin...</div>;
 
-    // Format ngày sinh cho đẹp (bỏ phần giờ phút)
     const formattedDob = profile.Dob ? new Date(profile.Dob).toLocaleDateString('vi-VN') : 'Chưa cập nhật';
 
+    // Màu role
+    const roleColor = {
+        admin: 'bg-red-100 text-red-700',
+        student: 'bg-green-100 text-green-700',
+        tutor: 'bg-blue-100 text-blue-700',
+        pending: 'bg-purple-100 text-purple-700'
+    }[profile.Role] || 'bg-gray-100 text-gray-700';
+
     return (
-        <div className="dashboard-container" style={{maxWidth: '600px'}}>
-            <h2 style={{borderBottom: '2px solid #004aad', paddingBottom: '10px', marginBottom: '20px'}}>
-                📄 Hồ Sơ Cá Nhân
+        <div className="max-w-[700px] mx-auto my-10 p-6 bg-white rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+
+            {/* Header */}
+            <h2 className="text-2xl font-bold text-[#004aad] border-b pb-2 mb-6 flex items-center gap-2">
+                Hồ sơ cá nhân
             </h2>
 
-            <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                
-                {/* Ảnh đại diện giả lập */}
-                <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                    <div style={{
-                        width: '100px', height: '100px', background: '#ddd', borderRadius: '50%', 
-                        margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '40px'
-                    }}>
-                        👤
-                    </div>
-                    <h3 style={{marginTop: '10px', color: '#004aad'}}>{profile.FullName || profile.Username}</h3>
-                    <span className={`role-badge role-${profile.Role}`}>{profile.Role.toUpperCase()}</span>
+            {/* Avatar + Role */}
+            <div className="flex flex-col items-center mb-6">
+                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl">
+                    👤
                 </div>
+                <h3 className="mt-2 text-xl font-bold text-[#004aad]">
+                    {profile.FullName || profile.Username}
+                </h3>
+                <span className={`mt-2 px-4 py-1 rounded-full text-xs font-bold ${roleColor}`}>
+                    {profile.Role.toUpperCase()}
+                </span>
+            </div>
 
-                {/* Bảng thông tin chi tiết */}
-                <table style={{marginTop: 0}}>
-                    <tbody>
-                        <tr>
-                            <td><strong>Mã số (ID):</strong></td>
-                            <td style={{fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold'}}>
-                                {profile.SchoolID || "Chưa cấp"}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>{profile.Email}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Mật khẩu:</strong></td>
-                            <td>******** (Đã mã hóa)</td> 
-                        </tr>
-                        <tr>
-                            <td><strong>Họ và tên:</strong></td>
-                            <td>{profile.FullName || "Chưa cập nhật"}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ngày sinh:</strong></td>
-                            <td>{formattedDob}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số điện thoại:</strong></td>
-                            <td>{profile.Phone || "Chưa cập nhật"}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Quê quán:</strong></td>
-                            <td>{profile.Hometown || "Chưa cập nhật"}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số Căn Cước (CCCD):</strong></td>
-                            <td>{profile.CitizenID || "Chưa cập nhật"}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button 
-                    onClick={() => navigate('/edit-profile')} 
-                    className="btn-primary" 
-                    style={{marginTop: '20px', background: '#004aad'}}
+            {/* Thông tin chi tiết */}
+            <div className="grid grid-cols-1 gap-4 text-gray-700">
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Mã số (ID):</span>
+                    <span className="font-bold">{profile.SchoolID || "Chưa cấp"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Email:</span>
+                    <span>{profile.Email || "---"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Mật khẩu:</span>
+                    <span>******** (Đã mã hóa)</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Họ và tên:</span>
+                    <span>{profile.FullName || "Chưa cập nhật"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Ngày sinh:</span>
+                    <span>{formattedDob}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Số điện thoại:</span>
+                    <span>{profile.Phone || "Chưa cập nhật"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Quê quán:</span>
+                    <span>{profile.Hometown || "Chưa cập nhật"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                    <span className="font-semibold">Số Căn Cước (CCCD):</span>
+                    <span>{profile.CitizenID || "Chưa cập nhật"}</span>
+                </div>
+            </div>
+
+            {/* Nút chỉnh sửa */}
+            <div className="flex justify-center mt-6">
+                <button
+                    onClick={() => navigate('/edit-profile')}
+                    className="px-6 py-3 bg-[#004aad] text-white font-bold rounded-lg hover:bg-blue-700"
                 >
-                    ✏️ Chỉnh sửa thông tin
+                    Chỉnh sửa thông tin
                 </button>
             </div>
         </div>

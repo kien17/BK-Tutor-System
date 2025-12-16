@@ -3,12 +3,12 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const AdminEditUser = () => {
-    const { id } = useParams(); // Lấy ID người cần sửa từ URL
+    const { id } = useParams();
     const navigate = useNavigate();
-    
+
     const [formData, setFormData] = useState({
         fullName: '',
-        schoolId: '', // Admin được quyền sửa cả mã số
+        schoolId: '',
         phone: '',
         hometown: '',
         dob: '',
@@ -17,9 +17,11 @@ const AdminEditUser = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (!token) { navigate('/login'); return; }
+        if (!token) {
+            navigate('/login');
+            return;
+        }
 
-        // Lấy thông tin hiện tại của user đó để điền vào form
         axios.get(`http://localhost:5000/api/users/${id}`, {
             headers: { Authorization: token }
         })
@@ -34,74 +36,147 @@ const AdminEditUser = () => {
                 dob: user.Dob ? user.Dob.split('T')[0] : ''
             });
         })
-        .catch(err => alert("Không tìm thấy người dùng!"));
-    }, [id]);
+        .catch(() => alert("Không tìm thấy người dùng!"));
+    }, [id, navigate]);
 
-    const handleChange = (e) => {
+    const handleChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
         const token = localStorage.getItem('token');
 
         try {
-            await axios.put(`http://localhost:5000/api/users/${id}`, formData, {
-                headers: { Authorization: token }
-            });
+            await axios.put(
+                `http://localhost:5000/api/users/${id}`,
+                formData,
+                { headers: { Authorization: token } }
+            );
             alert("✅ Admin đã cập nhật thành công!");
-            navigate(`/user/${id}`); // Quay về trang xem chi tiết user đó
-        } catch (err) {
+            navigate(`/user/${id}`);
+        } catch {
             alert("Lỗi khi cập nhật!");
-            console.error(err);
         }
     };
 
     return (
-        <div className="login-container" style={{maxWidth: '600px', marginTop: '40px'}}>
-            <h2 style={{color: '#dc3545', borderBottom: '2px solid #eee', paddingBottom: '10px'}}>
-                🛠 Admin: Sửa Thông Tin
-            </h2>
-            
-            <form onSubmit={handleSubmit} style={{textAlign: 'left'}}>
-                <div className="form-group">
-                    <label>Mã số (ID Trường):</label>
-                    <input name="schoolId" value={formData.schoolId} onChange={handleChange} style={{fontWeight: 'bold'}} />
+        <div className="max-w-[700px] mx-auto my-10 p-6 bg-white rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+
+            {/* Header */}
+            <div className="mb-6 border-b pb-3">
+                <h2 className="text-[22px] font-bold text-red-600 flex items-center gap-2">
+                    🛠 Admin – Sửa Thông Tin Người Dùng
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                    Chỉnh sửa thông tin cá nhân của người dùng trong hệ thống
+                </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Mã số */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Mã số (ID Trường)
+                    </label>
+                    <input
+                        name="schoolId"
+                        value={formData.schoolId}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 font-bold
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div className="form-group">
-                    <label>Họ và tên:</label>
-                    <input name="fullName" value={formData.fullName} onChange={handleChange} required />
+                {/* Họ tên */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Họ và tên
+                    </label>
+                    <input
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div className="form-group">
-                    <label>Ngày sinh:</label>
-                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} />
+                {/* Ngày sinh */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Ngày sinh
+                    </label>
+                    <input
+                        type="date"
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div className="form-group">
-                    <label>Số điện thoại:</label>
-                    <input name="phone" value={formData.phone} onChange={handleChange} />
+                {/* SĐT */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Số điện thoại
+                    </label>
+                    <input
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div className="form-group">
-                    <label>Quê quán:</label>
-                    <input name="hometown" value={formData.hometown} onChange={handleChange} />
+                {/* Quê quán */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Quê quán
+                    </label>
+                    <input
+                        name="hometown"
+                        value={formData.hometown}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div className="form-group">
-                    <label>Số CCCD:</label>
-                    <input name="citizenId" value={formData.citizenId} onChange={handleChange} />
+                {/* CCCD */}
+                <div>
+                    <label className="block text-sm font-semibold mb-1">
+                        Số CCCD
+                    </label>
+                    <input
+                        name="citizenId"
+                        value={formData.citizenId}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300
+                                   focus:outline-none focus:ring-2 focus:ring-red-400"
+                    />
                 </div>
 
-                <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
-                    <button type="submit" className="btn-primary" style={{background: '#dc3545'}}>
-                        Lưu thay đổi (Admin)
+                {/* Actions */}
+                <div className="flex gap-3 pt-4">
+                    <button
+                        type="submit"
+                        className="flex-1 py-3 rounded-lg bg-red-600 text-white font-bold
+                                   hover:bg-red-700 transition"
+                    >
+                        💾 Lưu thay đổi
                     </button>
-                    <button 
-                        type="button" 
+
+                    <button
+                        type="button"
                         onClick={() => navigate(-1)}
-                        style={{background: '#6c757d', color: 'white', padding: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer', flex: 1}}
+                        className="flex-1 py-3 rounded-lg bg-gray-200 text-gray-700 font-bold
+                                   hover:bg-gray-300 transition"
                     >
                         Hủy
                     </button>

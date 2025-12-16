@@ -102,6 +102,15 @@ const AdminDashboard = () => {
         return matchSearch && matchRole;
     });
 
+    const tabBase =
+    "px-5 py-2 font-bold rounded-t-lg transition-all duration-200";
+
+    const tabActive =
+        "bg-red-100 text-red-600 border-b-4 border-red-500";
+
+    const tabInactive =
+        "text-gray-600 hover:bg-gray-100 hover:text-gray-800";
+
     return (
         <div className="max-w-[1200px] mx-auto my-8 p-6 bg-white rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.08)] font-sans">
 
@@ -123,23 +132,20 @@ const AdminDashboard = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-4 border-b mb-5">
+            <div className="flex gap-2 border-b mb-5">
                 <button
                     onClick={() => setActiveTab('users')}
-                    className={`px-5 py-2 font-bold ${
-                        activeTab === 'users'
-                            ? 'border-b-4 border-red-500 text-red-500'
-                            : 'text-gray-600 hover:text-gray-800'
+                    className={`${tabBase} ${
+                        activeTab === 'users' ? tabActive : tabInactive
                     }`}
                 >
                     Quản Lý Người Dùng
                 </button>
+
                 <button
                     onClick={() => setActiveTab('system')}
-                    className={`px-5 py-2 font-bold ${
-                        activeTab === 'system'
-                            ? 'border-b-4 border-red-500 text-red-500'
-                            : 'text-gray-600 hover:text-gray-800'
+                    className={`${tabBase} ${
+                        activeTab === 'system' ? tabActive : tabInactive
                     }`}
                 >
                     Hệ Thống
@@ -184,6 +190,9 @@ const AdminDashboard = () => {
             )}
         </div>
     );
+
+
+
 };
 
 export default AdminDashboard;

@@ -1,35 +1,48 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import logoImg from '../assets/logo.png';
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [user, setUser] = useState(null);
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showNoti, setShowNoti] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const unreadCount = notifications.filter(n => !n.IsRead).length;
 
-    // Kiểm tra đăng nhập mỗi khi Navbar render
+    const dropdownRef = useRef(null);
+    const notiRef = useRef(null);
+
     useEffect(() => {
         const userStr = localStorage.getItem('user');
-        if (userStr) {
-            setUser(JSON.parse(userStr));
-        }
+        if (userStr) setUser(JSON.parse(userStr));
+    }, []);
+
+    // Click ngoài để tắt dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+            if (notiRef.current && !notiRef.current.contains(event.target)) {
+                setShowNoti(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleLogout = () => {
         if(window.confirm("Bạn có chắc muốn đăng xuất?")) {
-            localStorage.clear(); // Xóa token
-            setUser(null); // Reset state
-            navigate('/login'); // Chuyển về trang login
-            window.location.reload(); // Reload để sạch sẽ state cũ
+            localStorage.clear();
+            setUser(null);
+            navigate('/login');
+            window.location.reload();
         }
     };
 
-    const [notifications, setNotifications] = useState([]);
-    const [showNoti, setShowNoti] = useState(false);
-    const unreadCount = notifications.filter(n => !n.IsRead).length;
-
-    // Hàm lấy thông báo
     const fetchNoti = async () => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -42,83 +55,98 @@ const Navbar = () => {
         }
     };
 
-    // Gọi khi load trang
     useEffect(() => {
         fetchNoti();
-        // Có thể set setInterval để tự động check mỗi 10s nếu muốn "Real-time" hơn
     }, [user]);
 
     const handleRead = async () => {
         setShowNoti(!showNoti);
         if (!showNoti && unreadCount > 0) {
-            // Khi mở ra thì đánh dấu đã đọc hết
             const token = localStorage.getItem('token');
             await axios.put('http://localhost:5000/api/notifications/read', {}, { headers: {Authorization:token}});
-            fetchNoti(); // Load lại để mất số đỏ
+            fetchNoti();
         }
     };
 
+    // Định nghĩa menu giữa
+    const menuItems = [
+        { name: 'Đăng Ký Tư Vấn', path: '/student/booking', roles: ['student'] },
+        { name: 'Lịch Dạy', path: '/tutor', roles: ['tutor'] },
+        { name: 'Quản Trị', path: '/admin', roles: ['admin'] },
+        { name: 'Phản hồi & Đánh giá', path: '/admin/reviews', roles: ['admin'] },
+        { name: 'Kho Tài Liệu', path: '/documents', roles: ['student','tutor','admin'] },
+    ];
+
+    // Xác định tab active “dài nhất phù hợp”
+    const activeItem = menuItems
+        .filter(item => user && item.roles.includes(user.role))
+        .reduce((prev, curr) => {
+            if (location.pathname.startsWith(curr.path)) {
+                return (!prev || curr.path.length > prev.path.length) ? curr : prev;
+            }
+            return prev;
+        }, null);
+
     return (
-        <nav>
-            {/* 1. Logo bên trái */}
-            <Link to="/" style={{textDecoration:'none', display:'flex', alignItems:'center', gap: '12px'}}>
-                <img 
-                    src={logoImg} 
-                    alt="BK Tutor Logo" 
-                    style={{
-                        height: '45px', 
-                        width: 'auto'
-                    }} 
-                />
-                
-                <span style={{
-                    color: 'white', 
-                    fontSize: '22px', 
-                    fontWeight: 'bold', 
-                    letterSpacing: '1px',
-                    fontFamily: '"Segoe UI", sans-serif'
-                }}>
-                    BK Tutor
-                </span>
+        <nav className="bg-[#004aad] text-white px-6 py-3 flex items-center justify-between shadow-md">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3">
+                <img src={logoImg} alt="BK Tutor Logo" className="h-10 w-auto"/>
+                <span className="font-bold text-xl tracking-wide">BK Tutor</span>
             </Link>
 
-            {/* 2. Menu Giữa (Chỉ hiện khi đã đăng nhập) */}
-            <div className="nav-links">
-                {/* {user && user.role === 'student' && <Link to="/student" className="nav-link">Tìm Tài Liệu</Link>} */}
-                {user && user.role === 'student' && <Link to="/student/booking" className="nav-link">Đăng Ký Tư Vấn</Link>}
-                {user && user.role === 'tutor' && <Link to="/tutor" className="nav-link">Lịch Dạy</Link>}
-                {user && user.role === 'admin' && <Link to="/admin" className="nav-link">Quản Trị</Link>}
-                {user && user.role === 'admin' && <Link to="/admin/reviews" className="nav-link">Phản hồi & Đánh giá</Link>}
-                <Link to="/documents" className="nav-link">Kho Tài Liệu</Link>
+            {/* Menu giữa */}
+            <div className="flex gap-3 flex-wrap items-center">
+                {menuItems.map((item) => {
+                    if (!user || !item.roles.includes(user.role)) return null;
+                    const isActive = activeItem?.name === item.name; // Chỉ tab dài nhất
+                    return (
+                        <Link 
+                            key={item.name} 
+                            to={item.path} 
+                            className={`px-4 py-2 rounded-md transition duration-300 font-semibold 
+                                ${isActive 
+                                    ? 'bg-white text-gray-900 shadow-sm'  // Active: nền trắng nhạt + text tối + shadow nhẹ
+                                    : 'hover:bg-gray-100 hover:text-gray-800' // Hover: nền xám nhạt + text hơi tối
+                                }`}
+                        >
+                            {item.name}
+                        </Link>
+                    );
+                })}
             </div>
 
-            {/* 3. Góc phải: Nút Login hoặc User Dropdown */}
-            <div className="user-menu" style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
-                {/* --- QUẢ CHUÔNG THÔNG BÁO --- */}
-                {user && (
-                    <div style={{position: 'relative'}}>
-                        <button onClick={handleRead} style={{background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer'}}>
-                            🔔
-                        </button>
-                        {unreadCount > 0 && (
-                            <span style={{
-                                position: 'absolute', top: -5, right: -5, 
-                                background: 'red', color: 'white', borderRadius: '50%', 
-                                fontSize: '10px', padding: '2px 6px'
-                            }}>
-                                {unreadCount}
-                            </span>
-                        )}
+            {/* Góc phải */}
+            <div className="flex items-center gap-4 relative">
 
-                        {/* Dropdown Thông báo */}
+                {/* Thông báo */}
+                {user && (
+                    <div ref={notiRef} className="relative">
+                        <button 
+                            onClick={handleRead} 
+                            className="text-2xl relative hover:text-yellow-300 transition"
+                        >
+                            🔔
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-2">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </button>
+
                         {showNoti && (
-                            <div className="dropdown-menu" style={{width: '300px', right: -50}}>
-                                <h4 style={{padding: '10px', borderBottom: '1px solid #eee', margin: 0, color: '#004aad'}}>Thông báo mới</h4>
-                                {notifications.length === 0 ? <p style={{padding:10}}>Không có thông báo.</p> : (
+                            <div className="absolute right-0 mt-2 w-80 bg-white text-black rounded-xl shadow-lg overflow-hidden z-50">
+                                <h4 className="px-4 py-2 bg-[#004aad] text-white font-semibold border-b">Thông báo mới</h4>
+                                {notifications.length === 0 ? (
+                                    <p className="p-4 text-center text-gray-500">Không có thông báo.</p>
+                                ) : (
                                     notifications.map(n => (
-                                        <div key={n.NotiID} style={{padding: '10px', borderBottom: '1px solid #f0f0f0', background: n.IsRead ? 'white' : '#e8f0fe', fontSize: '13px'}}>
+                                        <div 
+                                            key={n.NotiID} 
+                                            className={`px-4 py-2 border-b text-sm ${n.IsRead ? 'bg-white' : 'bg-blue-50'}`}
+                                        >
                                             {n.Message}
-                                            <div style={{fontSize: '10px', color: '#888', marginTop: 3}}>
+                                            <div className="text-xs text-gray-400 mt-1">
                                                 {new Date(n.CreatedAt).toLocaleString('vi-VN')}
                                             </div>
                                         </div>
@@ -129,37 +157,31 @@ const Navbar = () => {
                     </div>
                 )}
 
+                {/* User Dropdown */}
                 {user ? (
-                    // Nếu ĐÃ đăng nhập
-                    <div style={{position: 'relative'}}>
+                    <div ref={dropdownRef} className="relative">
                         <button 
-                            className="user-btn" 
                             onClick={() => setShowDropdown(!showDropdown)}
+                            className="flex items-center gap-2 px-3 py-1 bg-white text-[#004aad] rounded-full font-semibold hover:bg-gray-100 transition"
                         >
-                            <span style={{maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                👤 {user.fullName || user.username}
-                            </span>
-                            <span style={{fontSize: '10px'}}>▼</span>
+                            👤 <span className="max-w-[120px] truncate">{user.fullName || user.username}</span> ▼
                         </button>
 
                         {showDropdown && (
-                            <div className="dropdown-menu">
-                                <Link to="/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                                    📄 Xem thông tin
-                                </Link>
-                                <Link to="/change-password" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                                    🔒 Đổi mật khẩu
-                                </Link>
-                                <button className="dropdown-item logout" onClick={handleLogout}>
+                            <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-xl shadow-lg overflow-hidden z-50">
+                                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100 " onClick={() => setShowDropdown(false)}>📄 Xem thông tin</Link>
+                                <Link to="/change-password" className="block px-4 py-2 hover:bg-gray-100" onClick={() => setShowDropdown(false)}>🔒 Đổi mật khẩu</Link>
+                                <button 
+                                    onClick={handleLogout} 
+                                    className="w-full text-left px-4 py-2 hover:bg-red-100"
+                                >
                                     🚪 Đăng xuất
                                 </button>
-                                
                             </div>
                         )}
                     </div>
                 ) : (
-                    // Nếu CHƯA đăng nhập
-                    <Link to="/login" className="user-btn" style={{background: 'white', color: '#004aad'}}>
+                    <Link to="/login" className="px-4 py-2 bg-white text-[#004aad] font-semibold rounded-lg hover:bg-gray-100 transition">
                         Đăng Nhập
                     </Link>
                 )}
