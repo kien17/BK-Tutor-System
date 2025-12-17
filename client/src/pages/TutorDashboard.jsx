@@ -4,29 +4,31 @@ import BookingModal from '../components/BookingModal';
 import CreateInterviewTab from '../components/tutor/CreateInterviewTab';
 import ScheduleGridTab from '../components/tutor/ScheduleGridTab';
 import BookingRequestsTab from '../components/tutor/BookingRequestsTab';
+import ReviewTab from '../components/tutor/ReviewTab';
+import AcademicSessionModal from '../components/tutor/AcademicSessionModal';
 
 const TutorDashboard = () => {
     const [week, setWeek] = useState(1);
     const [availability, setAvailability] = useState([]);
     const [bookings, setBookings] = useState([]);
+    const [sessions, setSessions] = useState([]); // ✅ thêm
     const [activeTab, setActiveTab] = useState('grid');
 
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [locationInput, setLocationInput] = useState('');
+    const [selectedSession, setSelectedSession] = useState(null);
+    const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
 
     const [interviewForm, setInterviewForm] = useState({
-        emails: '',
         week: 1,
         day: 2,
         startPeriod: 1,
         topic: 'Tư vấn nhóm',
         location: 'Google Meet',
-        mode: 'Online'
+        meetingMode: 'Online',
+        maxStudents: 5
     });
-
-    const [reviews, setReviews] = useState([]);
-    const [averageRating, setAverageRating] = useState(0);
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const tutorId = user.id;
@@ -35,45 +37,35 @@ const TutorDashboard = () => {
         fetchData();
     }, [week]);
 
-    useEffect(() => {
-        if (tutorId) fetchReviews();
-    }, [tutorId]);
-
     const fetchData = async () => {
         const token = localStorage.getItem('token');
         if (!token || !user?.id) return;
 
         try {
-            const resAvail = await axios.get(`http://localhost:5000/api/tutor/${user.id}/availability?week=${week}`);
+            const resAvail = await axios.get(
+                `http://localhost:5000/api/tutor/${user.id}/availability?week=${week}`
+            );
             setAvailability(resAvail.data);
 
-            const resBook = await axios.get('http://localhost:5000/api/my-bookings', {
-                headers: { Authorization: token }
-            });
-            const activeBookings = resBook.data.filter(
-                b => b.WeekNumber == week && b.Status !== 'rejected' && b.Status !== 'cancelled'
-            );
-            setBookings(activeBookings);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const fetchReviews = async () => {
-        const token = localStorage.getItem('token');
-        if (!token || !tutorId) return;
-
-        try {
-            const res = await axios.get(
-                `http://localhost:5000/api/tutors/${tutorId}/reviews-with-booking`,
+            const resBook = await axios.get(
+                'http://localhost:5000/api/my-bookings',
                 { headers: { Authorization: token } }
             );
-            setReviews(res.data.reviews);
-            setAverageRating(res.data.averageRating ? Number(res.data.averageRating).toFixed(1) : 0);
+            setBookings(
+                resBook.data.filter(
+                    b => b.WeekNumber == week && !['cancelled'].includes(b.Status)
+                )
+            );
+
+            // ✅ FETCH ACADEMIC SESSIONS
+            const resSessions = await axios.get(
+                `http://localhost:5000/api/tutor/academic-sessions?week=${week}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSessions(resSessions.data);
+
         } catch (err) {
-            console.error('Lỗi tải đánh giá:', err);
-            setReviews([]);
-            setAverageRating(0);
+            console.error(err);
         }
     };
 
@@ -82,54 +74,71 @@ const TutorDashboard = () => {
         setLocationInput(booking.Location || '');
         setIsModalOpen(true);
     };
-    
+    const openSessionModal = (session) => {
+        setSelectedSession(session);
+        setIsSessionModalOpen(true);
+    };
+
     const toggleAvailability = async (day, period) => {
         const token = localStorage.getItem('token');
-        const isFree = availability.find(a => a.DayOfWeek === day && period >= a.StartPeriod && period <= a.EndPeriod);
+        const isFree = availability.find(
+            a => a.DayOfWeek === day && period >= a.StartPeriod && period <= a.EndPeriod
+        );
 
         try {
             if (isFree) {
-                await axios.delete('http://localhost:5000/api/tutor/availability', {
-                    headers: { Authorization: token },
-                    data: { week, day, startPeriod: period, endPeriod: period }
-                });
+                await axios.delete(
+                    'http://localhost:5000/api/tutor/availability',
+                    {
+                        headers: { Authorization: token },
+                        data: { week, day, startPeriod: period, endPeriod: period }
+                    }
+                );
             } else {
-                await axios.post('http://localhost:5000/api/tutor/availability', {
-                    week, day, startPeriod: period, endPeriod: period
-                }, { headers: { Authorization: token } });
+                await axios.post(
+                    'http://localhost:5000/api/tutor/availability',
+                    { week, day, startPeriod: period, endPeriod: period },
+                    { headers: { Authorization: token } }
+                );
             }
             fetchData();
-        } catch (e) {
+        } catch {
             alert("Lỗi cập nhật lịch");
         }
     };
-
     const updateLocation = async () => {
         const token = localStorage.getItem('token');
         try {
-            await axios.put(`http://localhost:5000/api/booking/${selectedBooking.BookingID}/location`,
+            await axios.put(
+                `http://localhost:5000/api/booking/${selectedBooking.BookingID}/location`,
                 { location: locationInput },
                 { headers: { Authorization: token } }
             );
             alert("✅ Đã cập nhật địa điểm!");
             setIsModalOpen(false);
             fetchData();
-        } catch (e) { alert("Lỗi cập nhật"); }
+        } catch {
+            alert("Lỗi cập nhật");
+        }
     };
 
     const cancelBooking = async () => {
         const reason = prompt("Nhập lý do hủy:");
         if (!reason) return;
+
         const token = localStorage.getItem('token');
         try {
-            await axios.put(`http://localhost:5000/api/booking/${selectedBooking.BookingID}/cancel`,
+            await axios.put(
+                `http://localhost:5000/api/booking/${selectedBooking.BookingID}/cancel`,
                 { reason },
                 { headers: { Authorization: token } }
             );
             alert("✅ Đã hủy lịch!");
             setIsModalOpen(false);
             fetchData();
-        } catch (e) { alert("Lỗi hủy"); }
+        } catch {
+            alert("Lỗi hủy");
+        }
     };
 
     const handleAction = async (bookingId, action) => {
@@ -150,46 +159,46 @@ const TutorDashboard = () => {
             });
             alert("✅ Đã xử lý!");
             fetchData();
-        } catch (e) { alert("Lỗi xử lý"); }
+        } catch (e) {
+            alert("Lỗi xử lý");
+        }
     };
 
-    const renderStars = (rating) => (
-        <div className="text-yellow-400 text-lg">
-            {'★'.repeat(rating)}
-            {'☆'.repeat(5 - rating)}
-        </div>
-    );
-
     return (
-        <div className="p-6 max-w-6xl mx-auto ">
-            <h2 className="text-2xl font-bold text-blue-900 mb-6">🎓 Giảng Viên Dashboard</h2>
+        <div className="p-6 max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-blue-900 mb-6">
+                🎓 Giảng Viên Dashboard
+            </h2>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-gray-300 mb-6">
-                <TabButton active={activeTab==='grid'} onClick={()=>setActiveTab('grid')}>📅 Lịch Biểu</TabButton>
-                <TabButton active={activeTab==='requests'} onClick={()=>setActiveTab('requests')}>📩 Yêu cầu ({bookings.filter(b=>b.Status==='pending').length})</TabButton>
-                <TabButton active={activeTab==='interview'} onClick={()=>setActiveTab('interview')}>👥 Tạo Buổi Tư Vấn</TabButton>
-                <TabButton active={activeTab==='reviews'} onClick={()=>setActiveTab('reviews')}>⭐ Xem Đánh Giá ({reviews.length})</TabButton>
+            <div className="flex gap-2 border-b mb-6">
+                <TabButton active={activeTab==='grid'} onClick={()=>setActiveTab('grid')}>
+                    📅 Lịch Biểu
+                </TabButton>
+                <TabButton active={activeTab==='requests'} onClick={()=>setActiveTab('requests')}>
+                    📩 Yêu cầu
+                </TabButton>
+                <TabButton active={activeTab==='interview'} onClick={()=>setActiveTab('interview')}>
+                    👥 Tạo Buổi Tư Vấn
+                </TabButton>
+                <TabButton active={activeTab==='reviews'} onClick={()=>setActiveTab('reviews')}>
+                    ⭐ Đánh Giá
+                </TabButton>
             </div>
 
-            {/* Tab content */}
-            <div className="bg-white p-6 rounded-lg shadow-sm min-h-[300px]">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
                 {activeTab === 'grid' && (
                     <ScheduleGridTab
                         week={week}
                         setWeek={setWeek}
                         availability={availability}
                         bookings={bookings}
+                        sessions={sessions} 
                         onToggleAvailability={toggleAvailability}
                         onOpenBookingModal={openBookingModal}
+                        onOpenSessionModal={openSessionModal}
                     />
                 )}
-                {activeTab === 'requests' && (
-                    <BookingRequestsTab
-                        bookings={bookings}
-                        onHandleAction={handleAction}
-                    />
-                )}
+
                 {activeTab === 'interview' && (
                     <CreateInterviewTab
                         interviewForm={interviewForm}
@@ -197,43 +206,15 @@ const TutorDashboard = () => {
                         onSuccess={fetchData}
                     />
                 )}
-                {activeTab === 'reviews' && (
-                    <div>
-                        <h3 className="text-pink-600 text-xl font-semibold mb-6">Đánh Giá Từ Sinh Viên</h3>
 
-                        {/* Average rating */}
-                        <div className="bg-gray-50 p-6 rounded-xl text-center mb-6 shadow-sm">
-                            <h2 className="text-5xl text-yellow-400 font-bold mb-2">{averageRating || '0.0'}</h2>
-                            <div className="text-2xl mb-2">{renderStars(Math.round(averageRating || 0))}</div>
-                            <p className="text-gray-500">Dựa trên {reviews.length} đánh giá</p>
-                        </div>
-
-                        {/* Reviews list */}
-                        {reviews.length === 0 ? (
-                            <p className="text-center text-gray-400 italic py-10">Chưa có đánh giá nào từ sinh viên.</p>
-                        ) : (
-                            <div className="space-y-4">
-                                {reviews.map(review => (
-                                    <div key={review.ReviewID} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition">
-                                        <div className="flex justify-between mb-2">
-                                            <strong className="text-blue-900">{review.StudentName}</strong>
-                                            <span className="text-gray-500 text-sm">{new Date(review.CreatedAt).toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                        <div className="text-gray-600 text-sm mb-2">
-                                            <strong>Buổi tư vấn:</strong> Tuần {review.WeekNumber}, Thứ {review.DayOfWeek}, Tiết {review.StartPeriod}{review.EndPeriod !== review.StartPeriod ? `-${review.EndPeriod}` : ''}<br/>
-                                            <strong>Chủ đề:</strong> {review.Topic}
-                                        </div>
-                                        <div className="mb-2">{renderStars(review.Rating)}</div>
-                                        <p className="text-gray-800">{review.Comment || <em className="text-gray-400">Không có nhận xét</em>}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                {activeTab === 'reviews' && <ReviewTab tutorId={tutorId} />}
+                {activeTab === 'requests' && (
+                    <BookingRequestsTab
+                        bookings={bookings}
+                        onHandleAction={handleAction} 
+                    />
                 )}
             </div>
-
-            {/* Booking Modal */}
             <BookingModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -242,13 +223,13 @@ const TutorDashboard = () => {
                     <div className="flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             onClick={cancelBooking}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-500 rounded-lg font-semibold hover:bg-red-200 transition-shadow shadow-sm hover:shadow-md"
+                            className="px-4 py-2 bg-red-100 text-red-700 border border-red-500 rounded-lg font-semibold"
                         >
                             Hủy Lịch
                         </button>
                         <button
                             onClick={updateLocation}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 border border-blue-400 rounded-lg font-semibold hover:bg-blue-200 transition-shadow shadow-sm hover:shadow-md"
+                            className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-400 rounded-lg font-semibold"
                         >
                             Cập nhật
                         </button>
@@ -256,62 +237,60 @@ const TutorDashboard = () => {
                 }
             >
                 {selectedBooking ? (
-                    <div className="flex flex-col gap-5">
-                        {/* Sinh viên & Thời gian */}
-                        <div className="text-gray-700">
-                            <span className="font-semibold">Sinh viên:</span> {selectedBooking.StudentName}
-                        </div>
-                        {/* Thời gian */}
-                        <div className="text-gray-700">
-                            <span className="font-semibold">Thời gian:</span> Tuần {selectedBooking.WeekNumber} • Thứ {selectedBooking.DayOfWeek} • Tiết {selectedBooking.StartPeriod}{selectedBooking.EndPeriod !== selectedBooking.StartPeriod ? `-${selectedBooking.EndPeriod}` : ""}
+                    <div className="flex flex-col gap-4">
+                        <div className="text-gray-700 break-words whitespace-normal">
+                            <span className="font-semibold">Sinh viên:</span>{" "}
+                            {selectedBooking.StudentName}
                         </div>
 
-                        {/* Chủ đề */}
-                        <div className="text-gray-700 break-words">
-                            <span className="font-semibold">Chủ đề:</span> {selectedBooking.Topic}
+                        <div className="text-gray-700 break-words whitespace-normal">
+                            <span className="font-semibold">Thời gian:</span>{" "}
+                            Tuần {selectedBooking.WeekNumber} • Thứ {selectedBooking.DayOfWeek} • Tiết {selectedBooking.StartPeriod}
                         </div>
 
-                        {/* Hình thức */}
-                        <div className="text-gray-700">
+                        <div className="text-gray-700 break-words whitespace-normal">
+                            <span className="font-semibold">Chủ đề:</span>{" "}
+                            {selectedBooking.Topic}
+                        </div>
+
+                        <div className="text-gray-700 break-words whitespace-normal">
                             <span className="font-semibold">Hình thức:</span>{" "}
-                            <span
-                                className={`font-bold px-2 py-1 rounded-full ${
-                                    selectedBooking.MeetingMode === 'Online' 
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-green-100 text-green-700'
-                                }`}
-                            >
-                                {selectedBooking.MeetingMode}
-                            </span>
+                            {selectedBooking.MeetingMode}
                         </div>
 
-                        {/* Địa điểm / Link */}
                         <div className="flex flex-col gap-1">
-                            <label className="font-semibold text-gray-700">Địa điểm / Link Meeting:</label>
-                            <input
-                                type="text"
-                                value={locationInput}
-                                onChange={e => setLocationInput(e.target.value)}
-                                placeholder="Nhập phòng học hoặc link Google Meet..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all"
-                            />
+                            <div className="text-gray-700 break-words whitespace-normal">
+                                <span className="font-semibold">Địa điểm/ Link:</span>{" "}
+                            </div>
+                                <input
+                                    value={locationInput}
+                                    onChange={e => setLocationInput(e.target.value)}
+                                    className="border px-3 py-2 rounded"
+                                />
                         </div>
                     </div>
                 ) : (
-                    <div className="text-gray-500 text-center py-8 italic">Không có thông tin buổi tư vấn nào được chọn</div>
+                    <div className="text-gray-500 italic">Chưa chọn buổi tư vấn</div>
                 )}
             </BookingModal>
+            <AcademicSessionModal
+                isOpen={isSessionModalOpen}
+                onClose={() => setIsSessionModalOpen(false)}
+                session={selectedSession}
+            />
 
         </div>
     );
 };
 
-// Tab Button component
 const TabButton = ({ active, onClick, children }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-2 font-bold rounded-t-lg transition
-            ${active ? 'bg-blue-100 text-blue-900 border-b-4 border-blue-900 shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+        className={`px-4 py-2 font-bold rounded-t-lg
+            ${active
+                ? 'bg-blue-100 text-blue-900 border-b-4 border-blue-900'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
     >
         {children}
     </button>

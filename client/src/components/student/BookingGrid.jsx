@@ -1,4 +1,3 @@
-// src/components/student/BookingGrid.jsx
 import React from 'react';
 
 const PERIODS = Array.from({ length: 17 }, (_, i) => i + 1);
@@ -18,6 +17,7 @@ const BookingGrid = ({
       {/* Top Controls */}
       <div className="bg-white p-6 rounded-lg shadow-sm min-h-[300px]">
         <div className="flex flex-wrap gap-5 items-center mb-6 p-4 bg-blue-50 rounded-xl shadow-sm">
+
           {/* Tutor Select */}
           <div className="flex items-center gap-2">
             <label className="font-semibold">Chọn Giảng Viên:</label>
@@ -56,8 +56,9 @@ const BookingGrid = ({
             <LegendItem color="bg-green-500" label="Rảnh" />
             <LegendItem color="bg-yellow-400" label="Đã có lịch" />
             <LegendItem color="bg-purple-600" label="Chờ" />
-            <LegendItem color="bg-blue-500" label="Duyệt" />
+            <LegendItem color="bg-blue-500" label="Đã duyệt" />
             <LegendItem color="bg-gray-500" label="Đã hủy" />
+            <LegendItem color="bg-indigo-600" label="Tư vấn nhóm" />
           </div>
         </div>
 
@@ -67,15 +68,15 @@ const BookingGrid = ({
             <table className="w-full table-fixed border-separate border-spacing-0 text-center overflow-hidden">
               <thead>
                 <tr>
-                  <th className="bg-[#004aad] text-white p-3 w-16 text-sm border border-gray-300  text-center">
+                  <th className="bg-[#004aad] text-white p-3 w-16 text-sm border border-gray-300">
                     Tiết
                   </th>
                   {DAYS.map((d) => (
                     <th
                       key={d}
-                      className="bg-[#0066d1] text-white p-3 text-sm border border-gray-300  text-center"
+                      className="bg-[#0066d1] text-white p-3 text-sm border border-gray-300 text-center"
                     >
-                      Thứ {d}
+                      {d === 8 ? 'Chủ Nhật' : `Thứ ${d}`}
                     </th>
                   ))}
                 </tr>
@@ -84,7 +85,7 @@ const BookingGrid = ({
               <tbody>
                 {PERIODS.map((p) => (
                   <tr key={p} className="hover:bg-gray-50">
-                    <td className="bg-gray-100 font-semibold border border-gray-300 p-2 text-sm  text-center">
+                    <td className="bg-gray-100 font-semibold border border-gray-300 p-2 text-sm">
                       Tiết {p}
                     </td>
 
@@ -96,21 +97,30 @@ const BookingGrid = ({
                         <td
                           key={`${d}-${p}`}
                           onClick={() => handleSlotClick(d, p, status, data)}
-                          className="h-12 text-xs p-1 font-bold border border-gray-300 transition duration-150"
+                          className="h-12 text-xs p-1 font-bold border border-gray-300 transition duration-150 align-middle"
                           style={{
                             background: color,
                             cursor,
-                            color: status === "closed" ? "#222" : "#fff"
+                            color: status === 'closed' ? '#222' : '#fff'
                           }}
                           onMouseEnter={(e) =>
-                            (e.currentTarget.style.filter = "brightness(0.95)")
+                            (e.currentTarget.style.filter = 'brightness(0.95)')
                           }
                           onMouseLeave={(e) =>
-                            (e.currentTarget.style.filter = "none")
+                            (e.currentTarget.style.filter = 'none')
                           }
                         >
-                          <div className="leading-tight">
-                            {label && <div>{label}</div>}
+                          <div className="leading-tight break-words">
+                            {status === 'session' && data ? (
+                              <>
+                                <div>Tư vấn nhóm</div>
+                                <div className="text-[11px] font-normal">
+                                  {data.CurrentStudents} / {data.MaxStudents}
+                                </div>
+                              </>
+                            ) : (
+                              label && <div>{label}</div>
+                            )}
                           </div>
                         </td>
                       );
@@ -125,7 +135,6 @@ const BookingGrid = ({
             Vui lòng chọn một Giảng viên để xem lịch rảnh.
           </p>
         )}
-
       </div>
     </>
   );
@@ -133,7 +142,7 @@ const BookingGrid = ({
 
 const LegendItem = ({ color, label }) => (
   <div className="flex items-center gap-1">
-    <span className={`w-3 h-3 rounded-sm ${color} border border-gray-300`}></span>
+    <span className={`w-3 h-3 rounded-sm ${color} border border-gray-300`} />
     <span>{label}</span>
   </div>
 );

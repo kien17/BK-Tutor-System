@@ -9,67 +9,77 @@ const ScheduleGridTab = ({
     setWeek,
     availability,
     bookings,
+    sessions,
     onToggleAvailability,
-    onOpenBookingModal
+    onOpenBookingModal,
+    onOpenSessionModal
 }) => {
 
+    // Lọc bỏ các booking đã bị từ chối
+    const visibleBookings = bookings.filter(b => b.Status !== "rejected");
+
     const handleGridClick = (day, period) => {
-        const booking = bookings.find(
+        const booking = visibleBookings.find(
             b => b.DayOfWeek === day && period >= b.StartPeriod && period <= b.EndPeriod
         );
-        booking ? onOpenBookingModal(booking) : onToggleAvailability(day, period);
+        if (booking) return onOpenBookingModal(booking);
+
+        const session = sessions.find(
+            s => s.DayOfWeek === day && period >= s.StartPeriod && period <= s.EndPeriod
+        );
+        if (session) return onOpenSessionModal(session);
+
+        onToggleAvailability(day, period);
     };
 
     const getCellClass = (day, period) => {
-        const booking = bookings.find(
+        const booking = visibleBookings.find(
             b => b.DayOfWeek === day && period >= b.StartPeriod && period <= b.EndPeriod
         );
 
-        if (booking) 
-            return "border border-[#ffcf52] bg-[#ffe08a] font-bold cursor-pointer transition duration-150";
-        
+        if (booking) {
+            return "border border-[#ffcf52] bg-[#ffe08a] font-bold cursor-pointer transition";
+        }
+
+        const session = sessions.find(
+            s => s.DayOfWeek === day && period >= s.StartPeriod && period <= s.EndPeriod
+        );
+        if (session)
+            return "border border-blue-400 bg-blue-100 font-bold cursor-pointer transition";
+
         const isFree = availability.find(
             a => a.DayOfWeek === day && period >= a.StartPeriod && period <= a.EndPeriod
         );
+        if (isFree)
+            return "border border-[#7ddf95] bg-[#c4f4d4] cursor-pointer transition";
 
-        if (isFree) 
-            return "border border-[#7ddf95] bg-[#c4f4d4] cursor-pointer transition duration-150";
-        
-        return "border border-[#e8e8e8] bg-white cursor-pointer transition duration-150";
+        return "border border-[#e8e8e8] bg-white cursor-pointer transition";
     };
 
     return (
         <>
-            {/* Week Selector */}
+            {/* Week Selector + Legend */}
             <div className="mb-4 flex justify-between items-center">
-                {/* Left: Chọn tuần */}
                 <div className="flex items-center gap-2">
                     <label className="font-semibold">Chọn tuần:</label>
                     <select
-                    value={week}
-                    onChange={e => setWeek(Number(e.target.value))}
-                    className="px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={week}
+                        onChange={e => setWeek(Number(e.target.value))}
+                        className="px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                    {[...Array(20)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>Tuần {i + 1}</option>
-                    ))}
+                        {[...Array(20)].map((_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                                Tuần {i + 1}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
-                {/* Right: Legend */}
                 <div className="flex gap-4 text-xs items-center">
-                    <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-sm bg-white border border-gray-300"></span> 
-                        <span>Chưa đăng ký</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-sm bg-[#c4f4d4] border border-[#7ddf95]"></span>
-                        <span>Rảnh</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-sm bg-[#ffe08a] border border-[#ffcf52]"></span>
-                        <span>Có lịch</span>
-                    </div>
+                    <Legend color="bg-white border-gray-300" label="Chưa đăng ký" />
+                    <Legend color="bg-[#c4f4d4] border-[#7ddf95]" label="Rảnh" />
+                    <Legend color="bg-[#ffe08a] border-[#ffcf52]" label="Có lịch" />
+                    <Legend color="bg-blue-100 border-blue-400" label="Tư vấn nhóm" />
                 </div>
             </div>
 
@@ -78,22 +88,36 @@ const ScheduleGridTab = ({
                 <table className="w-full table-fixed border-separate border-spacing-0 rounded-xl shadow-sm overflow-hidden">
                     <thead>
                         <tr>
-                            <th className="bg-[#004aad] text-white p-3 w-16 text-sm text-center border border-gray-300">Tiết</th>
-                            {DAYS.map(d => (
-                                <th key={d} className="bg-[#0066d1] text-white p-3 text-sm text-center border border-gray-300">Thứ {d}</th>
-                            ))}
+                            <th className="bg-[#004aad] text-white p-3 w-16 text-sm text-center border border-gray-300">
+                                Tiết
+                            </th>
+                            {DAYS.map((d) => (
+                                <th
+                                    key={d}
+                                    className="bg-[#0066d1] text-white p-3 text-sm border border-gray-300 text-center"
+                                >
+                                    {d === 8 ? 'Chủ Nhật' : `Thứ ${d}`}
+                                </th>
+                                ))}
                         </tr>
                     </thead>
+
                     <tbody>
                         {PERIODS.map(p => (
                             <tr key={p} className="hover:bg-gray-50">
                                 <td className="bg-gray-100 font-semibold border border-gray-300 p-2 text-center text-sm">
                                     Tiết {p}
                                 </td>
+
                                 {DAYS.map(d => {
-                                    const booking = bookings.find(
+                                    const booking = visibleBookings.find(
                                         b => b.DayOfWeek === d && p >= b.StartPeriod && p <= b.EndPeriod
                                     );
+
+                                    const session = sessions.find(
+                                        s => s.DayOfWeek === d && p >= s.StartPeriod && p <= s.EndPeriod
+                                    );
+
                                     return (
                                         <td
                                             key={`${d}-${p}`}
@@ -104,9 +128,20 @@ const ScheduleGridTab = ({
                                         >
                                             {booking && (
                                                 <div className="leading-tight">
-                                                    <div>{booking.Status === "pending" ? "Đang Chờ Duyệt" : "Có lịch"}</div>
-                                                    <div className="text-[10px] max-w-[80px] truncate opacity-80">
-                                                        {/* {booking.StudentName} */}
+                                                    <div>
+                                                        {booking.Status === "pending"
+                                                            ? "Đang chờ duyệt"
+                                                            : "Có lịch"
+                                                        }
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {session && (
+                                                <div className="leading-tight">
+                                                    <div className="text-[11px]">Tư vấn nhóm</div>
+                                                    <div className="text-[10px] opacity-80">
+                                                        {session.CurrentStudents} / {session.MaxStudents}
                                                     </div>
                                                 </div>
                                             )}
@@ -121,5 +156,12 @@ const ScheduleGridTab = ({
         </>
     );
 };
+
+const Legend = ({ color, label }) => (
+    <div className="flex items-center gap-1">
+        <span className={`w-3 h-3 rounded-sm border ${color}`} />
+        <span>{label}</span>
+    </div>
+);
 
 export default ScheduleGridTab;

@@ -54,6 +54,20 @@ const BookingRequestsTab = ({ bookings, onHandleAction }) => {
 
     const pendingCount = bookings.filter(b => b.Status === "pending").length;
 
+    // Sắp xếp: rejected xuống cuối
+    const sortedBookings = [...bookings].sort((a, b) => {
+        if (a.Status === "rejected" && b.Status !== "rejected") return 1;
+        if (a.Status !== "rejected" && b.Status === "rejected") return -1;
+        return 0;
+    });
+
+    // Hành động hủy kèm xác nhận
+    const handleCancelConfirmed = (bookingId) => {
+        if (window.confirm("Bạn có chắc muốn hủy lịch này?")) {
+            onHandleAction(bookingId, "rejected");
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
             {/* Header */}
@@ -65,7 +79,7 @@ const BookingRequestsTab = ({ bookings, onHandleAction }) => {
             </div>
 
             {/* Table */}
-            {bookings.length === 0 ? (
+            {sortedBookings.length === 0 ? (
                 <div className="text-center text-gray-500 py-8 italic text-sm">
                     Không có yêu cầu nào trong tuần này.
                 </div>
@@ -82,7 +96,7 @@ const BookingRequestsTab = ({ bookings, onHandleAction }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {bookings.map((b, i) => (
+                            {sortedBookings.map((b, i) => (
                                 <tr key={b.BookingID} className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100`}>
                                     <td className="p-3 font-semibold text-[#004aad] text-center">{b.StudentName}</td>
                                     <td className="p-3 text-sm text-center">
@@ -112,7 +126,7 @@ const BookingRequestsTab = ({ bookings, onHandleAction }) => {
                                                 </>
                                             )}
                                             {b.Status === "confirmed" && (
-                                                <ActionButton color="red" onClick={() => onHandleAction(b.BookingID, "rejected")}>Hủy</ActionButton>
+                                                <ActionButton color="red" onClick={() => handleCancelConfirmed(b.BookingID)}>Hủy</ActionButton>
                                             )}
                                         </div>
                                     </td>
@@ -140,7 +154,12 @@ const BookingRequestsTab = ({ bookings, onHandleAction }) => {
                                 </>
                             )}
                             {selectedBooking.Status === "confirmed" && (
-                                <ActionButton color="red" onClick={() => { onHandleAction(selectedBooking.BookingID, "rejected"); closeModal(); }}>Hủy</ActionButton>
+                                <ActionButton color="red" onClick={() => { 
+                                    if (window.confirm("Bạn có chắc muốn hủy lịch này?")) {
+                                        onHandleAction(selectedBooking.BookingID, "rejected"); 
+                                        closeModal();
+                                    }
+                                }}>Hủy</ActionButton>
                             )}
                         </div>
                     }
