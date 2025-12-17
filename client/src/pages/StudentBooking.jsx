@@ -70,7 +70,6 @@ const StudentBooking = () => {
 
     // --- SLOT LOGIC ---
     const getSlotStatus = (day, period) => {
-        // Lấy tất cả booking của mình cho slot này
         const bookingsAtSlot = myBookings.filter(b =>
             b.TutorID == selectedTutor &&
             b.WeekNumber == week &&
@@ -79,42 +78,15 @@ const StudentBooking = () => {
             period <= b.EndPeriod
         );
 
-        // Nếu có booking confirmed → hiển thị confirmed
         const confirmedBooking = bookingsAtSlot.find(b => b.Status === 'confirmed');
-        if (confirmedBooking) {
-            return {
-                status: 'mine',
-                label: 'Đã duyệt',
-                color: '#007bff',
-                cursor: 'pointer',
-                data: confirmedBooking
-            };
-        }
+        if (confirmedBooking) return { status: 'mine', label: 'Đã duyệt', color: '#007bff', cursor: 'pointer', data: confirmedBooking };
 
-        // Nếu có booking pending → hiển thị pending
         const pendingBooking = bookingsAtSlot.find(b => b.Status === 'pending');
-        if (pendingBooking) {
-            return {
-                status: 'mine',
-                label: 'Chờ duyệt',
-                color: '#6f42c1',
-                cursor: 'not-allowed',
-                data: pendingBooking
-            };
-        }
+        if (pendingBooking) return { status: 'mine', label: 'Chờ duyệt', color: '#6f42c1', cursor: 'not-allowed', data: pendingBooking };
 
-        // Nếu tất cả booking là cancelled hoặc rejected → slot không thể bấm
-        if (bookingsAtSlot.length > 0 && bookingsAtSlot.every(b => b.Status === 'cancelled' || b.Status === 'rejected')) {
-            return {
-                status: 'mine',
-                label: 'Đã hủy',
-                color: '#6c757d',
-                cursor: 'not-allowed',
-                data: bookingsAtSlot[0]
-            };
-        }
+        if (bookingsAtSlot.length > 0 && bookingsAtSlot.every(b => b.Status === 'cancelled' || b.Status === 'rejected'))
+            return { status: 'mine', label: 'Đã hủy', color: '#6c757d', cursor: 'not-allowed', data: bookingsAtSlot[0] };
 
-        // Kiểm tra slot đã có người khác
         const isBusy = busySlots.find(b =>
             b.DayOfWeek == day &&
             period >= b.StartPeriod &&
@@ -122,7 +94,6 @@ const StudentBooking = () => {
         );
         if (isBusy) return { status: 'busy', label: 'Đã có lịch', color: '#ffc107', cursor: 'not-allowed' };
 
-        // Slot rảnh
         const isOpen = availability.find(a =>
             a.DayOfWeek == day &&
             period >= a.StartPeriod &&
@@ -202,22 +173,22 @@ const StudentBooking = () => {
     };
 
     const renderStatusBadge = (status) => {
-        if (status === 'confirmed') return <span style={{ color: 'green', fontWeight: 'bold' }}>✅ ĐÃ DUYỆT</span>;
-        if (status === 'rescheduled') return <span style={{ color: '#fd7e14', fontWeight: 'bold' }}>📅 ĐÃ ĐỔI LỊCH</span>;
-        return <span style={{ color: '#6f42c1', fontWeight: 'bold' }}>⏳ ĐANG CHỜ</span>;
+        if (status === 'confirmed') return <span className="text-green-600 font-bold">✅ ĐÃ DUYỆT</span>;
+        if (status === 'rescheduled') return <span className="text-orange-500 font-bold">📅 ĐÃ ĐỔI LỊCH</span>;
+        return <span className="text-purple-600 font-bold">⏳ ĐANG CHỜ</span>;
     };
 
     const activeBookings = myBookings.filter(b => b.Status !== 'rejected' && b.Status !== 'cancelled');
     const historyBookings = myBookings.filter(b => b.Status === 'rejected' || b.Status === 'cancelled');
 
     return (
-        <div className="dashboard-container">
-            <h2 style={{ color: '#004aad' }}>📅 Sinh Viên Dashboard</h2>
+        <div className="max-w-[1200px] mx-auto p-6 font-sans">
+            <h2 className="text-2xl font-bold text-[#004aad] mb-6">📅 Sinh Viên Dashboard</h2>
 
             {/* Tab */}
-            <div style={{ marginBottom: 20, borderBottom: '1px solid #ddd', display: 'flex', gap: 10 }}>
-                <button onClick={() => setActiveTab('booking')} style={getTabStyle(activeTab === 'booking')}>📅 Đặt Lịch Tư Vấn</button>
-                <button onClick={() => setActiveTab('history')} style={getTabStyle(activeTab === 'history')}>📜 Lịch Sử buổi tư vấn</button>
+            <div className="flex gap-4 border-b mb-6">
+                <TabButton isActive={activeTab === 'booking'} onClick={() => setActiveTab('booking')}>📅 Đặt Lịch Tư Vấn</TabButton>
+                <TabButton isActive={activeTab === 'history'} onClick={() => setActiveTab('history')}>📜 Lịch Sử Buổi Tư Vấn</TabButton>
             </div>
 
             {activeTab === 'booking' && (
@@ -254,21 +225,27 @@ const StudentBooking = () => {
                     </>
                 }
             >
-                <div className="form-group">
-                    <label>Hình thức:</label>
-                    <select value={form.mode} onChange={e => setForm({ ...form, mode: e.target.value })} style={{ width: '100%', padding: 8 }}>
-                        <option value="Online">🌐 Online (Google Meet/Zoom)</option>
-                        <option value="Offline">🏫 Offline (Tại trường)</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Nội dung cần tư vấn:</label>
-                    <textarea
-                        value={form.topic}
-                        onChange={e => setForm({ ...form, topic: e.target.value })}
-                        placeholder="VD: Em muốn hỏi về đồ án môn học..."
-                        style={{ width: '100%', padding: 8, height: 80 }}
-                    />
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <label className="font-semibold mb-1 block">Hình thức:</label>
+                        <select
+                            value={form.mode}
+                            onChange={e => setForm({ ...form, mode: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="Online">🌐 Online (Google Meet/Zoom)</option>
+                            <option value="Offline">🏫 Offline (Tại trường)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="font-semibold mb-1 block">Nội dung cần tư vấn:</label>
+                        <textarea
+                            value={form.topic}
+                            onChange={e => setForm({ ...form, topic: e.target.value })}
+                            placeholder="VD: Em muốn hỏi về đồ án môn học..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
+                        />
+                    </div>
                 </div>
             </BookingModal>
 
@@ -280,14 +257,36 @@ const StudentBooking = () => {
                 actions={<button onClick={() => setModalType(null)} className="btn-primary">Đóng</button>}
             >
                 {selectedSlot && (
-                    <table style={{ width: '100%', lineHeight: '1.8' }}>
+                    <table className="w-full text-sm leading-6">
                         <tbody>
-                            <tr><td style={{ width: '100px', color: '#666' }}>Giảng viên:</td><td><strong>{selectedSlot.TutorName}</strong></td></tr>
-                            <tr><td style={{ color: '#666' }}>Thời gian:</td><td>Tuần {selectedSlot.WeekNumber}, Thứ {selectedSlot.DayOfWeek}, Tiết {selectedSlot.StartPeriod}</td></tr>
-                            <tr><td style={{ color: '#666' }}>Hình thức:</td><td><span style={{ background: selectedSlot.MeetingMode === 'Online' ? '#e7f1ff' : '#d4edda', padding: '2px 8px', borderRadius: 4, color: selectedSlot.MeetingMode === 'Online' ? '#007bff' : '#155724', fontWeight: 'bold' }}>{selectedSlot.MeetingMode}</span></td></tr>
-                            <tr><td style={{ color: '#666' }}>Địa điểm:</td><td style={{ color: '#dc3545', fontWeight: 'bold' }}>{selectedSlot.Location || "Đang cập nhật..."}</td></tr>
-                            <tr><td style={{ color: '#666' }}>Nội dung:</td><td>{selectedSlot.Topic}</td></tr>
-                            <tr><td style={{ color: '#666' }}>Trạng thái:</td><td>{renderStatusBadge(selectedSlot.Status)}</td></tr>
+                            <tr>
+                                <td className="w-32 text-gray-600">Giảng viên:</td>
+                                <td><strong>{selectedSlot.TutorName}</strong></td>
+                            </tr>
+                            <tr>
+                                <td className="text-gray-600">Thời gian:</td>
+                                <td>Tuần {selectedSlot.WeekNumber}, Thứ {selectedSlot.DayOfWeek}, Tiết {selectedSlot.StartPeriod}</td>
+                            </tr>
+                            <tr>
+                                <td className="text-gray-600">Hình thức:</td>
+                                <td>
+                                    <span className={`px-2 py-1 rounded ${selectedSlot.MeetingMode === 'Online' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-700'} font-bold`}>
+                                        {selectedSlot.MeetingMode}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="text-gray-600">Địa điểm:</td>
+                                <td className="text-red-600 font-bold">{selectedSlot.Location || "Đang cập nhật..."}</td>
+                            </tr>
+                            <tr>
+                                <td className="text-gray-600">Nội dung:</td>
+                                <td>{selectedSlot.Topic}</td>
+                            </tr>
+                            <tr>
+                                <td className="text-gray-600">Trạng thái:</td>
+                                <td>{renderStatusBadge(selectedSlot.Status)}</td>
+                            </tr>
                         </tbody>
                     </table>
                 )}
@@ -309,14 +308,14 @@ const StudentBooking = () => {
     );
 };
 
-const getTabStyle = (isActive) => ({
-    padding: '10px 20px',
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    background: isActive ? '#eee' : 'white',
-    borderBottom: isActive ? '3px solid #004aad' : 'none',
-    color: isActive ? '#004aad' : '#333'
-});
+// Tab Button Component
+const TabButton = ({ isActive, children, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-5 py-2 font-semibold rounded-t-lg transition-all duration-200 ${isActive ? 'bg-red-100 text-red-600 border-b-4 border-red-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'}`}
+    >
+        {children}
+    </button>
+);
 
 export default StudentBooking;

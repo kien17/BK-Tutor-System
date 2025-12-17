@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import BookingModal from '../BookingModal';
+import React, { useState } from "react";
+import BookingModal from "../BookingModal";
 
 const BookingHistory = ({
     activeBookings,
@@ -17,158 +17,155 @@ const BookingHistory = ({
             const res = await fetch(`http://localhost:5000/api/reviews/${bookingId}`, {
                 headers: { Authorization: token }
             });
-            if (!res.ok) throw new Error("Không lấy được đánh giá");
+            if (!res.ok) throw new Error();
             const data = await res.json();
             setViewReviewData(data);
             setViewReviewBooking(bookingId);
-        } catch (err) {
-            console.error(err);
+        } catch {
             alert("Lỗi khi tải đánh giá!");
         }
     };
+    const StatusBadge = ({ status }) => {
+        const map = {
+            confirmed: {
+                text: "Đã duyệt",
+                className: "bg-blue-100 text-blue-700 border-blue-300"
+            },
+            rescheduled: {
+                text: "Đổi lịch",
+                className: "bg-orange-100 text-orange-700 border-orange-300"
+            },
+            pending: {
+                text: "Chờ duyệt",
+                className: "bg-purple-100 text-purple-700 border-purple-300"
+            },
+            cancelled: {
+                text: "Đã huỷ",
+                className: "bg-red-100 text-red-700 border-red-300"
+            },
+            rejected: {
+                text: "Từ chối",
+                className: "bg-red-200 text-red-800 border-red-400"
+            }
+        };
 
-    const cardStyle = {
-        background: "white",
-        borderRadius: 12,
-        padding: "16px 20px",
-        marginBottom: 16,
-        border: "1px solid #ececec",
-        boxShadow: "0 3px 8px rgba(0,0,0,0.05)"
+        const badge = map[status] || map.pending;
+
+        return (
+            <span
+                className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${badge.className}`}
+            >
+                {badge.text}
+            </span>
+        );
     };
-
-    const buttonStyle = {
-        base: {
-            padding: "7px 14px",
-            borderRadius: 8,
-            border: "none",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "0.15s",
-            minWidth: 100,
-            textAlign: "center"
-        },
-        primary: { background: "#5a9bf6", color: "#fff" },   // xanh nhạt, dịu mắt
-        warning: { background: "#ffca80", color: "#5c4400" }, // cam nhạt, dịu hơn
-        muted: { background: "#adb5bd", color: "#fff" }       // xám nhạt
-    };
-
 
     return (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 32, marginTop: 10 }}>
-            {/* --- ACTIVE BOOKINGS --- */}
-            <div style={{ flex: 1, minWidth: 360 }}>
-                <h3 style={{
-                    borderBottom: "2px solid #28a745",
-                    paddingBottom: 6,
-                    marginBottom: 16,
-                    color: "#28a745",
-                    fontSize: 20
-                }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
+            {/* ================= ACTIVE BOOKINGS ================= */}
+            <section className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-green-600 border-b-2 border-green-500 pb-2 mb-5">
                     Buổi tư vấn đã tham gia
                 </h3>
 
                 {activeBookings.length === 0 ? (
-                    <p style={{ color: "#666" }}>Chưa có vé nào.</p>
+                    <p className="text-gray-500 italic">Chưa có buổi tư vấn nào.</p>
                 ) : (
-                    activeBookings.map(b => (
-                        <div
-                            key={b.BookingID}
-                            style={{
-                                ...cardStyle,
-                                borderLeft: `6px solid ${
-                                    b.Status === "confirmed"
-                                        ? "#007bff"
+                    <div className="space-y-4">
+                        {activeBookings.map(b => (
+                            <div
+                                key={b.BookingID}
+                                className={`rounded-xl border border-gray-200 shadow-sm p-4 transition hover:shadow-md
+                                    ${b.Status === "confirmed"
+                                        ? "border-l-4 border-l-blue-500"
                                         : b.Status === "rescheduled"
-                                        ? "#fd7e14"
-                                        : "#6f42c1"
-                                }`
-                            }}
-                        >
-                            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: 'wrap' }}>
-                                <strong style={{ fontSize: 16, marginBottom: 6 }}>
-                                    Tuần {b.WeekNumber}, Thứ {b.DayOfWeek}, Tiết {b.StartPeriod}
-                                </strong>
+                                        ? "border-l-4 border-l-orange-400"
+                                        : "border-l-4 border-l-purple-500"
+                                    }`}
+                            >
+                                <div className="flex justify-between flex-wrap gap-2">
+                                    <div className="font-semibold text-sm">
+                                        Tuần {b.WeekNumber}, Thứ {b.DayOfWeek}, Tiết {b.StartPeriod}
+                                    </div>
 
-                                <div style={{ textAlign: "right", minWidth: 140 }}>
-                                    {renderStatusBadge(b.Status)}
+                                    <div className="text-right">
+                                        <StatusBadge status={b.Status} />
 
-                                    <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                        {(b.Status === 'confirmed' || b.Status === 'rescheduled') && !reviewedBookings.includes(b.BookingID) && (
-                                            <button
-                                                onClick={() => openReviewModal(b)}
-                                                style={{ ...buttonStyle.base, ...buttonStyle.warning }}
-                                                onMouseEnter={e => e.currentTarget.style.opacity = 0.85}
-                                                onMouseLeave={e => e.currentTarget.style.opacity = 1}
-                                            >
-                                                Đánh giá
-                                            </button>
-                                        )}
+                                        <div className="mt-2 flex gap-2 justify-end flex-wrap">
+                                            {(b.Status === "confirmed" || b.Status === "rescheduled") &&
+                                                !reviewedBookings.includes(b.BookingID) && (
+                                                    <button
+                                                        onClick={() => openReviewModal(b)}
+                                                        className="px-3 py-1.5 rounded-lg text-sm font-semibold
+                                                                   bg-yellow-300 text-yellow-700 hover:bg-yellow-200 transition"
+                                                    >
+                                                        Đánh giá
+                                                    </button>
+                                                )}
 
-                                        {reviewedBookings.includes(b.BookingID) && (
-                                            <button
-                                                onClick={() => fetchReview(b.BookingID)}
-                                                style={{ ...buttonStyle.base, ...buttonStyle.muted }}
-                                                onMouseEnter={e => e.currentTarget.style.opacity = 0.85}
-                                                onMouseLeave={e => e.currentTarget.style.opacity = 1}
-                                            >
-                                                Xem đánh giá
-                                            </button>
-                                        )}
+                                            {reviewedBookings.includes(b.BookingID) && (
+                                                <button
+                                                    onClick={() => fetchReview(b.BookingID)}
+                                                    className="px-3 py-1.5 rounded-lg text-sm font-semibold
+                                                               bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                                                >
+                                                    Xem đánh giá
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div style={{ marginTop: 10, color: "#555", fontSize: 14, lineHeight: 1.5 }}>
-                                <div><strong>Giảng viên:</strong> {b.TutorName}</div>
-                                <div><strong>Địa điểm:</strong> {b.Location || "Chưa cập nhật"} ({b.MeetingMode})</div>
-                                <div><strong>Nội dung:</strong> {b.Topic}</div>
+                                <div className="mt-3 text-sm text-gray-600 space-y-1">
+                                    <div><strong>Giảng viên:</strong> {b.TutorName}</div>
+                                    <div>
+                                        <strong>Địa điểm:</strong>{" "}
+                                        {b.Location || "Chưa cập nhật"} ({b.MeetingMode})
+                                    </div>
+                                    <div><strong>Nội dung:</strong> {b.Topic}</div>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
-            </div>
+            </section>
 
-            {/* --- CANCELLED HISTORY --- */}
-            <div style={{ flex: 1, minWidth: 360 }}>
-                <h3 style={{
-                    borderBottom: "2px solid #dc3545",
-                    paddingBottom: 6,
-                    marginBottom: 16,
-                    color: "#dc3545",
-                    fontSize: 20
-                }}>
-                    🗑 Lịch sử Hủy / Từ chối
+            {/* ================= HISTORY ================= */}
+            <section className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-red-600 border-b-2 border-red-500 pb-2 mb-5">
+                    Lịch sử Hủy / Từ chối
                 </h3>
 
                 {historyBookings.length === 0 ? (
-                    <p style={{ color: "#666" }}>Trống.</p>
+                    <p className="text-gray-500 italic">Không có lịch sử.</p>
                 ) : (
-                    historyBookings.map(b => (
-                        <div
-                            key={b.BookingID}
-                            style={{
-                                ...cardStyle,
-                                background: "#fff5f5",
-                                borderLeft: "6px solid #dc3545"
-                            }}
-                        >
-                            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: 'wrap' }}>
-                                <strong style={{ textDecoration: "line-through", fontSize: 15, marginBottom: 4 }}>
-                                    Tuần {b.WeekNumber}, Thứ {b.DayOfWeek}
-                                </strong>
-                                <span style={{ color: "#dc3545", fontWeight: 700 }}>
-                                    {b.Status === "cancelled" ? "Bạn hủy" : "Giảng viên từ chối"}
-                                </span>
-                            </div>
-                            <div style={{ marginTop: 6, fontSize: 14 }}>
-                                <strong>GV:</strong> {b.TutorName}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                    <div className="space-y-4">
+                        {historyBookings.map(b => (
+                            <div
+                                key={b.BookingID}
+                                className="rounded-xl border border-red-200 bg-red-50 p-4"
+                            >
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="line-through text-gray-600 font-medium">
+                                        Tuần {b.WeekNumber}, Thứ {b.DayOfWeek}
+                                    </span>
+                                    <span className="font-bold text-red-600">
+                                        {b.Status === "cancelled"
+                                            ? "Bạn đã hủy"
+                                            : "Giảng viên từ chối"}
+                                    </span>
+                                </div>
 
-            {/* --- MODAL REVIEW --- */}
+                                <div className="mt-2 text-sm text-gray-700">
+                                    <strong>Giảng viên:</strong> {b.TutorName}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            {/* ================= REVIEW MODAL ================= */}
             <BookingModal
                 isOpen={!!viewReviewBooking}
                 onClose={() => {
@@ -177,29 +174,29 @@ const BookingHistory = ({
                 }}
                 title="Đánh giá chi tiết"
                 actions={
-                    <button 
-                        className="btn-primary"
-                        style={{ ...buttonStyle.base, ...buttonStyle.primary }}
+                    <button
+                        className="btn-primary px-4 py-2 rounded-lg"
                         onClick={() => setViewReviewBooking(null)}
-                        onMouseEnter={e => e.currentTarget.style.opacity = 0.85}
-                        onMouseLeave={e => e.currentTarget.style.opacity = 1}
                     >
                         Đóng
                     </button>
                 }
             >
                 {viewReviewData ? (
-                    <div style={{ fontSize: 15, lineHeight: 1.6 }}>
+                    <div className="text-sm leading-relaxed space-y-2">
                         <p><strong>Giảng viên:</strong> {viewReviewData.TutorName}</p>
                         <p>
                             <strong>Số sao:</strong>{" "}
-                            <span style={{ color: "#ffc107", marginLeft: 6 }}>
+                            <span className="text-yellow-400 ml-2">
                                 {"★".repeat(viewReviewData.Rating)}
                                 {"☆".repeat(5 - viewReviewData.Rating)}
                             </span>
                         </p>
                         <p><strong>Nội dung:</strong> {viewReviewData.Comment}</p>
-                        <p><strong>Ngày gửi:</strong> {new Date(viewReviewData.CreatedAt).toLocaleString()}</p>
+                        <p className="text-gray-500">
+                            <strong>Ngày gửi:</strong>{" "}
+                            {new Date(viewReviewData.CreatedAt).toLocaleString()}
+                        </p>
                     </div>
                 ) : (
                     <p>Đang tải...</p>

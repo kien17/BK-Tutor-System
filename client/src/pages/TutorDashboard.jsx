@@ -237,50 +237,71 @@ const TutorDashboard = () => {
             <BookingModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title="📄 Chi tiết Buổi Tư Vấn"
+                title="Chi tiết Buổi Tư Vấn"
                 actions={
-                    <>
+                    <div className="flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             onClick={cancelBooking}
-                            className="px-4 py-2 bg-red-100 text-red-700 border border-red-500 rounded-lg font-semibold flex items-center gap-2 hover:bg-red-200 transition"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-500 rounded-lg font-semibold hover:bg-red-200 transition-shadow shadow-sm hover:shadow-md"
                         >
-                            ❌ Hủy Lịch
+                            Hủy Lịch
                         </button>
                         <button
                             onClick={updateLocation}
-                            className="px-3 py-2 bg-blue-100 text-blue-700 border border-blue-400 rounded-lg font-semibold hover:bg-blue-200 transition"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 border border-blue-400 rounded-lg font-semibold hover:bg-blue-200 transition-shadow shadow-sm hover:shadow-md"
                         >
-                            🔄 Cập nhật
+                            Cập nhật
                         </button>
-                    </>
+                    </div>
                 }
             >
-                {selectedBooking && (
-                    <div className="flex flex-col gap-3">
-                        <div><strong>Sinh viên:</strong> {selectedBooking.StudentName}</div>
-                        <div><strong>Thời gian:</strong> Thứ {selectedBooking.DayOfWeek}, Tiết {selectedBooking.StartPeriod}</div>
-                        <div className="break-words">
-                            <strong>Chủ đề:</strong> {selectedBooking.Topic}
+                {selectedBooking ? (
+                    <div className="flex flex-col gap-5">
+                        {/* Sinh viên & Thời gian */}
+                        <div className="text-gray-700">
+                            <span className="font-semibold">Sinh viên:</span> {selectedBooking.StudentName}
                         </div>
-                        <div>
-                            <strong>Hình thức:</strong>{" "}
-                            <span className={`font-bold ${selectedBooking.MeetingMode === 'Online' ? 'text-blue-600' : 'text-green-600'}`}>
+                        {/* Thời gian */}
+                        <div className="text-gray-700">
+                            <span className="font-semibold">Thời gian:</span> Tuần {selectedBooking.WeekNumber} • Thứ {selectedBooking.DayOfWeek} • Tiết {selectedBooking.StartPeriod}{selectedBooking.EndPeriod !== selectedBooking.StartPeriod ? `-${selectedBooking.EndPeriod}` : ""}
+                        </div>
+
+                        {/* Chủ đề */}
+                        <div className="text-gray-700 break-words">
+                            <span className="font-semibold">Chủ đề:</span> {selectedBooking.Topic}
+                        </div>
+
+                        {/* Hình thức */}
+                        <div className="text-gray-700">
+                            <span className="font-semibold">Hình thức:</span>{" "}
+                            <span
+                                className={`font-bold px-2 py-1 rounded-full ${
+                                    selectedBooking.MeetingMode === 'Online' 
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}
+                            >
                                 {selectedBooking.MeetingMode}
                             </span>
                         </div>
-                        <div>
-                            <label className="font-bold block mb-1">Địa điểm / Link Meeting:</label>
+
+                        {/* Địa điểm / Link */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-gray-700">Địa điểm / Link Meeting:</label>
                             <input
                                 type="text"
                                 value={locationInput}
                                 onChange={e => setLocationInput(e.target.value)}
                                 placeholder="Nhập phòng học hoặc link Google Meet..."
-                                className="w-full p-2 border border-gray-300 rounded-md shadow-inner focus:ring-2 focus:ring-blue-400 transition"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all"
                             />
                         </div>
                     </div>
+                ) : (
+                    <div className="text-gray-500 text-center py-8 italic">Không có thông tin buổi tư vấn nào được chọn</div>
                 )}
             </BookingModal>
+
         </div>
     );
 };

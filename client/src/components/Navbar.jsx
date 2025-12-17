@@ -164,7 +164,7 @@ const Navbar = () => {
                             onClick={() => setShowDropdown(!showDropdown)}
                             className="flex items-center gap-2 px-3 py-1 bg-white text-[#004aad] rounded-full font-semibold hover:bg-gray-100 transition"
                         >
-                            👤 <span className="max-w-[120px] truncate">{user.fullName || user.username}</span> ▼
+                            👤 <span className="max-w-[200px] truncate">{user.fullName || user.username}</span> ▼
                         </button>
 
                         {showDropdown && (

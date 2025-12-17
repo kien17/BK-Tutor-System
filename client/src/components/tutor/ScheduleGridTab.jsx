@@ -59,16 +59,19 @@ const ScheduleGridTab = ({
                 {/* Right: Legend */}
                 <div className="flex gap-4 text-xs items-center">
                     <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-white border border-gray-300"></span> Chưa đăng ký
+                        <span className="w-3 h-3 rounded-sm bg-white border border-gray-300"></span> 
+                        <span>Chưa đăng ký</span>
                     </div>
                     <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[#c4f4d4] border border-[#7ddf95]"></span> Rảnh
+                        <span className="w-3 h-3 rounded-sm bg-[#c4f4d4] border border-[#7ddf95]"></span>
+                        <span>Rảnh</span>
                     </div>
                     <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[#ffe08a] border border-[#ffcf52]"></span> Có lịch
+                        <span className="w-3 h-3 rounded-sm bg-[#ffe08a] border border-[#ffcf52]"></span>
+                        <span>Có lịch</span>
                     </div>
                 </div>
-                </div>
+            </div>
 
             {/* Schedule Grid */}
             <div className="overflow-x-auto">
@@ -101,7 +104,7 @@ const ScheduleGridTab = ({
                                         >
                                             {booking && (
                                                 <div className="leading-tight">
-                                                    <div>{booking.Status === "pending" ? "Đang Chờ Duyệt" : "Đã nhận"}</div>
+                                                    <div>{booking.Status === "pending" ? "Đang Chờ Duyệt" : "Có lịch"}</div>
                                                     <div className="text-[10px] max-w-[80px] truncate opacity-80">
                                                         {/* {booking.StudentName} */}
                                                     </div>

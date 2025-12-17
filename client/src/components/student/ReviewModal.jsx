@@ -1,154 +1,96 @@
 // src/components/student/ReviewModal.jsx
 import React from "react";
+import BookingModal from "../BookingModal";
 
 const ReviewModal = ({
-  isOpen,
-  onClose,
-  booking,
-  reviewStars,
-  setReviewStars,
-  reviewText,
-  setReviewText,
-  onSubmit,
-  isSubmitting
+    isOpen,
+    onClose,
+    booking,
+    reviewStars,
+    setReviewStars,
+    reviewText,
+    setReviewText,
+    onSubmit,
+    isSubmitting
 }) => {
+    if (!isOpen || !booking) return null;
 
-  if (!isOpen || !booking) return null;
+    return (
+        <BookingModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Đánh giá buổi tư vấn"
+            actions={
+                <div className="flex flex-col sm:flex-row justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-red-100 text-red-700 border border-red-400 rounded-lg font-semibold hover:bg-red-200 transition"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={onSubmit}
+                        disabled={isSubmitting}
+                        className={`px-4 py-2 rounded-lg font-semibold transition shadow-sm
+                            ${
+                                isSubmitting
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-blue-100 text-blue-700 border border-blue-400 hover:bg-blue-200 hover:shadow-md"
+                            }
+                        `}
+                    >
+                        {isSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
+                    </button>
+                </div>
+            }
+        >
+            <div className="flex flex-col gap-5">
+                {/* Booking info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-gray-700">
+                    <div>
+                        <span className="font-semibold">Giảng viên:</span>{" "}
+                        {booking.TutorName}
+                    </div>
+                    <div>
+                        <span className="font-semibold">Thời gian:</span>{" "}
+                        Tuần {booking.WeekNumber} • Thứ {booking.DayOfWeek} • Tiết{" "}
+                        {booking.StartPeriod}
+                    </div>
+                </div>
 
-  const starStyle = (active) => ({
-    fontSize: 32,
-    cursor: "pointer",
-    color: active ? "#ffc107" : "#ddd",
-    transition: "0.2s"
-  });
+                {/* Stars */}
+                <div className="flex justify-center gap-2 text-3xl">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setReviewStars(s)}
+                            className={`transition transform hover:scale-110 ${
+                                reviewStars >= s
+                                    ? "text-yellow-400"
+                                    : "text-gray-300"
+                            }`}
+                            aria-label={`Rate ${s} stars`}
+                        >
+                            ★
+                        </button>
+                    ))}
+                </div>
 
-  return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
-        {/* Title */}
-        <h3 style={{ marginBottom: 10, color: "#004aad" }}>
-          ⭐ Đánh giá buổi tư vấn
-        </h3>
-
-        {/* Booking Info */}
-        <div style={infoBox}>
-          <div>
-            <strong>Giảng viên:</strong> {booking.TutorName}
-          </div>
-          <div>
-            <strong>Thời gian:</strong> Tuần {booking.WeekNumber}, Thứ {booking.DayOfWeek}, Tiết {booking.StartPeriod}
-          </div>
-        </div>
-
-        {/* Stars */}
-        <div style={{ margin: "15px 0", textAlign: "center" }}>
-          {[1, 2, 3, 4, 5].map((s) => (
-            <span
-              key={s}
-              style={starStyle(reviewStars >= s)}
-              onClick={() => setReviewStars(s)}
-            >
-              ★
-            </span>
-          ))}
-        </div>
-
-        {/* Comment box */}
-        <textarea
-          placeholder="Chia sẻ trải nghiệm của bạn..."
-          value={reviewText}
-          onChange={(e) => setReviewText(e.target.value)}
-          style={textareaStyle}
-        />
-
-        {/* Footer buttons */}
-        <div style={footerStyle}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              background: "#f8d7da",
-              color: "#b02a37",
-              border: "1px solid #dc3545",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontWeight: 600,
-              transition: "0.2s",
-            }}
-            onMouseOver={(e) => {
-              e.target.style.background = "#f1bfc4";
-              e.target.style.borderColor = "#c82333";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.background = "#f8d7da";
-              e.target.style.borderColor = "#dc3545";
-            }}
-          >
-            Hủy
-          </button>
-
-
-          <button
-            onClick={onSubmit}
-            className="btn-primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+                {/* Review text */}
+                <div className="flex flex-col gap-1">
+                    <label className="font-semibold text-gray-700">
+                        Nhận xét của bạn
+                    </label>
+                    <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        placeholder="Chia sẻ trải nghiệm của bạn về buổi tư vấn..."
+                        className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all resize-none"
+                    />
+                </div>
+            </div>
+        </BookingModal>
+    );
 };
 
 export default ReviewModal;
-
-// --- STYLES ---
-const overlayStyle = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100vw",
-  height: "100vh",
-  background: "rgba(0,0,0,0.45)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 9999
-};
-
-const modalStyle = {
-  background: "white",
-  width: "420px",
-  borderRadius: 10,
-  padding: 20,
-  boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-  animation: "fadeIn 0.2s"
-};
-
-const infoBox = {
-  background: "#f8faff",
-  padding: "10px 12px",
-  borderRadius: 6,
-  fontSize: 14,
-  lineHeight: 1.6,
-  border: "1px solid #e6eef8"
-};
-
-const textareaStyle = {
-  width: "100%",
-  padding: 10,
-  marginTop: 10,
-  height: 90,
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  resize: "none",
-  background: "#fff"
-};
-
-const footerStyle = {
-  display: "flex",
-  justifyContent: "flex-end",
-  marginTop: 20,
-  gap: 10
-};
