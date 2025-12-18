@@ -10,7 +10,7 @@ GO
 
 USE BKTutorDB;
 GO
-  
+
 -- 2. XÓA BẢNG CŨ (Để làm sạch dữ liệu, theo thứ tự ngược lại của quan hệ)
 -- Nếu bạn muốn giữ dữ liệu cũ thì comment đoạn này lại
 IF OBJECT_ID('Notifications', 'U') IS NOT NULL DROP TABLE Notifications;
@@ -153,3 +153,45 @@ CREATE TABLE Reviews (
     FOREIGN KEY (StudentID) REFERENCES Users(UserID)
 );
 GO
+
+CREATE TABLE AcademicSessions (
+    SessionID INT IDENTITY(1,1) PRIMARY KEY,
+    TutorID INT NOT NULL,
+
+    -- Thời gian
+    WeekNumber INT NOT NULL,
+    DayOfWeek INT NOT NULL,
+    StartPeriod INT NOT NULL,
+    EndPeriod INT NOT NULL,
+
+    -- Nội dung
+    Topic NVARCHAR(200),
+    Description NVARCHAR(500),
+    Location NVARCHAR(100),
+    MeetingMode NVARCHAR(20) DEFAULT 'Online',
+
+    -- SỐ LƯỢNG
+    MaxStudents INT NOT NULL CHECK (MaxStudents > 0),
+
+    Status NVARCHAR(20) DEFAULT 'open',
+    -- open, full, cancelled, completed
+
+    CreatedAt DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (TutorID) REFERENCES Users(UserID)
+);
+
+CREATE TABLE SessionParticipants (
+    SessionID INT NOT NULL,
+    StudentID INT NOT NULL,
+
+    Status NVARCHAR(20) DEFAULT 'registered',
+    -- registered, cancelled, attended, absent
+
+    RegisteredAt DATETIME DEFAULT GETDATE(),
+
+    PRIMARY KEY (SessionID, StudentID),
+
+    FOREIGN KEY (SessionID) REFERENCES AcademicSessions(SessionID) ON DELETE CASCADE,
+    FOREIGN KEY (StudentID) REFERENCES Users(UserID)
+);
