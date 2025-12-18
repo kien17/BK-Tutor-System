@@ -1,24 +1,31 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+
 import BookingModal from '../components/BookingModal';
 import CreateInterviewTab from '../components/tutor/CreateInterviewTab';
 import ScheduleGridTab from '../components/tutor/ScheduleGridTab';
 import BookingRequestsTab from '../components/tutor/BookingRequestsTab';
 import ReviewTab from '../components/tutor/ReviewTab';
 import AcademicSessionModal from '../components/tutor/AcademicSessionModal';
+import RescheduleModal from '../components/tutor/RescheduleModal';
 
 const TutorDashboard = () => {
     const [week, setWeek] = useState(1);
     const [availability, setAvailability] = useState([]);
     const [bookings, setBookings] = useState([]);
-    const [sessions, setSessions] = useState([]); // ✅ thêm
+    const [sessions, setSessions] = useState([]);
     const [activeTab, setActiveTab] = useState('grid');
 
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [locationInput, setLocationInput] = useState('');
+
     const [selectedSession, setSelectedSession] = useState(null);
     const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+
+    // 🔄 RESCHEDULE
+    const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+    const [rescheduleBooking, setRescheduleBooking] = useState(null);
 
     const [interviewForm, setInterviewForm] = useState({
         week: 1,
@@ -37,6 +44,7 @@ const TutorDashboard = () => {
         fetchData();
     }, [week]);
 
+    // ================= FETCH DATA =================
     const fetchData = async () => {
         const token = localStorage.getItem('token');
         if (!token || !user?.id) return;
@@ -57,7 +65,6 @@ const TutorDashboard = () => {
                 )
             );
 
-            // ✅ FETCH ACADEMIC SESSIONS
             const resSessions = await axios.get(
                 `http://localhost:5000/api/tutor/academic-sessions?week=${week}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -69,16 +76,19 @@ const TutorDashboard = () => {
         }
     };
 
+    // ================= MODALS =================
     const openBookingModal = (booking) => {
         setSelectedBooking(booking);
         setLocationInput(booking.Location || '');
         setIsModalOpen(true);
     };
+
     const openSessionModal = (session) => {
         setSelectedSession(session);
         setIsSessionModalOpen(true);
     };
 
+    // ================= AVAILABILITY =================
     const toggleAvailability = async (day, period) => {
         const token = localStorage.getItem('token');
         const isFree = availability.find(
@@ -106,6 +116,8 @@ const TutorDashboard = () => {
             alert("Lỗi cập nhật lịch");
         }
     };
+
+    // ================= BOOKING ACTIONS =================
     const updateLocation = async () => {
         const token = localStorage.getItem('token');
         try {
@@ -141,29 +153,43 @@ const TutorDashboard = () => {
         }
     };
 
-    const handleAction = async (bookingId, action) => {
+    // ================= HANDLE ACTION =================
+    const submitAction = async (bookingId, body) => {
         const token = localStorage.getItem('token');
-        let body = { status: action };
-
-        if (action === 'rescheduled') {
-            const newInfo = prompt("Nhập lịch mới (Tuần-Thứ-Tiết):", `${week}-2-1`);
-            if (!newInfo) return;
-            const p = newInfo.split('-');
-            if (p.length !== 3) return alert("Sai định dạng!");
-            body = { status: 'rescheduled', newWeek: p[0], newDay: p[1], newPeriod: p[2] };
-        }
-
         try {
-            await axios.put(`http://localhost:5000/api/booking/${bookingId}/status`, body, {
-                headers: { Authorization: token }
-            });
+            await axios.put(
+                `http://localhost:5000/api/booking/${bookingId}/status`,
+                body,
+                { headers: { Authorization: token } }
+            );
             alert("✅ Đã xử lý!");
             fetchData();
-        } catch (e) {
+        } catch {
             alert("Lỗi xử lý");
         }
     };
 
+    const handleAction = (bookingId, action) => {
+        if (action === 'rescheduled') {
+            const booking = bookings.find(b => b.BookingID === bookingId);
+            setRescheduleBooking(booking);
+            setIsRescheduleOpen(true);
+            return;
+        }
+
+        submitAction(bookingId, { status: action });
+    };
+
+    const confirmReschedule = ({ week, day, period }) => {
+        submitAction(rescheduleBooking.BookingID, {
+            status: 'rescheduled',
+            newWeek: week,
+            newDay: day,
+            newPeriod: period
+        });
+    };
+
+    // ================= RENDER =================
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold text-blue-900 mb-6">
@@ -171,16 +197,16 @@ const TutorDashboard = () => {
             </h2>
 
             <div className="flex gap-2 border-b mb-6">
-                <TabButton active={activeTab==='grid'} onClick={()=>setActiveTab('grid')}>
+                <TabButton active={activeTab === 'grid'} onClick={() => setActiveTab('grid')}>
                     📅 Lịch Biểu
                 </TabButton>
-                <TabButton active={activeTab==='requests'} onClick={()=>setActiveTab('requests')}>
+                <TabButton active={activeTab === 'requests'} onClick={() => setActiveTab('requests')}>
                     📩 Yêu cầu
                 </TabButton>
-                <TabButton active={activeTab==='interview'} onClick={()=>setActiveTab('interview')}>
+                <TabButton active={activeTab === 'interview'} onClick={() => setActiveTab('interview')}>
                     👥 Tạo Buổi Tư Vấn
                 </TabButton>
-                <TabButton active={activeTab==='reviews'} onClick={()=>setActiveTab('reviews')}>
+                <TabButton active={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')}>
                     ⭐ Đánh Giá
                 </TabButton>
             </div>
@@ -192,7 +218,7 @@ const TutorDashboard = () => {
                         setWeek={setWeek}
                         availability={availability}
                         bookings={bookings}
-                        sessions={sessions} 
+                        sessions={sessions}
                         onToggleAvailability={toggleAvailability}
                         onOpenBookingModal={openBookingModal}
                         onOpenSessionModal={openSessionModal}
@@ -208,77 +234,58 @@ const TutorDashboard = () => {
                 )}
 
                 {activeTab === 'reviews' && <ReviewTab tutorId={tutorId} />}
+
                 {activeTab === 'requests' && (
                     <BookingRequestsTab
                         bookings={bookings}
-                        onHandleAction={handleAction} 
+                        onHandleAction={handleAction}
                     />
                 )}
             </div>
+
+            {/* BOOKING DETAIL */}
             <BookingModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title="Chi tiết Buổi Tư Vấn"
                 actions={
-                    <div className="flex flex-col sm:flex-row justify-end gap-3">
-                        <button
-                            onClick={cancelBooking}
-                            className="px-4 py-2 bg-red-100 text-red-700 border border-red-500 rounded-lg font-semibold"
-                        >
-                            Hủy Lịch
-                        </button>
-                        <button
-                            onClick={updateLocation}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-400 rounded-lg font-semibold"
-                        >
-                            Cập nhật
-                        </button>
+                    <div className="flex gap-3 justify-end">
+                        <button onClick={cancelBooking} className="btn-danger">Hủy Lịch</button>
+                        <button onClick={updateLocation} className="btn-primary">Cập nhật</button>
                     </div>
                 }
             >
-                {selectedBooking ? (
+                {selectedBooking && (
                     <div className="flex flex-col gap-4">
-                        <div className="text-gray-700 break-words whitespace-normal">
-                            <span className="font-semibold">Sinh viên:</span>{" "}
-                            {selectedBooking.StudentName}
-                        </div>
-
-                        <div className="text-gray-700 break-words whitespace-normal">
-                            <span className="font-semibold">Thời gian:</span>{" "}
-                            Tuần {selectedBooking.WeekNumber} • Thứ {selectedBooking.DayOfWeek} • Tiết {selectedBooking.StartPeriod}
-                        </div>
-
-                        <div className="text-gray-700 break-words whitespace-normal">
-                            <span className="font-semibold">Chủ đề:</span>{" "}
-                            {selectedBooking.Topic}
-                        </div>
-
-                        <div className="text-gray-700 break-words whitespace-normal">
-                            <span className="font-semibold">Hình thức:</span>{" "}
-                            {selectedBooking.MeetingMode}
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <div className="text-gray-700 break-words whitespace-normal">
-                                <span className="font-semibold">Địa điểm/ Link:</span>{" "}
-                            </div>
-                                <input
-                                    value={locationInput}
-                                    onChange={e => setLocationInput(e.target.value)}
-                                    className="border px-3 py-2 rounded"
-                                />
-                        </div>
+                        <div><b>Sinh viên:</b> {selectedBooking.StudentName}</div>
+                        <div><b>Thời gian:</b> Tuần {selectedBooking.WeekNumber} • Thứ {selectedBooking.DayOfWeek} • Tiết {selectedBooking.StartPeriod}</div>
+                        <div><b>Chủ đề:</b> {selectedBooking.Topic}</div>
+                        <div><b>Hình thức:</b> {selectedBooking.MeetingMode}</div>
+                        <input
+                            value={locationInput}
+                            onChange={e => setLocationInput(e.target.value)}
+                            className="border px-3 py-2 rounded"
+                        />
                     </div>
-                ) : (
-                    <div className="text-gray-500 italic">Chưa chọn buổi tư vấn</div>
                 )}
             </BookingModal>
+
             <AcademicSessionModal
                 isOpen={isSessionModalOpen}
                 onClose={() => setIsSessionModalOpen(false)}
                 session={selectedSession}
             />
 
+            {/* 🔄 RESCHEDULE MODAL */}
+            <RescheduleModal
+                isOpen={isRescheduleOpen}
+                onClose={() => setIsRescheduleOpen(false)}
+                booking={rescheduleBooking}
+                week={week}
+                bookings={bookings}
+                sessions={sessions}
+                onConfirm={confirmReschedule}
+            />
         </div>
     );
 };

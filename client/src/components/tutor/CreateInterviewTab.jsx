@@ -57,89 +57,6 @@ const CreateInterviewTab = ({ interviewForm, setInterviewForm, onSuccess }) => {
             </h2>
 
             <form onSubmit={handleCreateSession} className="flex flex-col gap-6">
-
-                {/* MODE + LOCATION */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="block text-gray-700 font-semibold mb-2">Hình thức</label>
-                        <select
-                            value={interviewForm.meetingMode}
-                            onChange={(e) => setInterviewForm({ ...interviewForm, meetingMode: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-md text-sm"
-                        >
-                            <option value="Online">Online</option>
-                            <option value="Offline">Offline</option>
-                        </select>
-                    </div>
-
-                    <div className="flex-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="block text-gray-700 font-semibold mb-2">Địa điểm / Link</label>
-                        <input
-                            required
-                            type="text"
-                            value={interviewForm.location}
-                            onChange={(e) => setInterviewForm({ ...interviewForm, location: e.target.value })}
-                            placeholder="Nhập phòng học hoặc link Google Meet"
-                            className="w-full p-3 border border-gray-300 rounded-md text-sm"
-                        />
-                    </div>
-                </div>
-
-                {/* WEEK / DAY / PERIOD */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <label className="block text-gray-700 font-semibold mb-1">Tuần</label>
-                        <select
-                            value={interviewForm.week}
-                            onChange={(e) => setInterviewForm({ ...interviewForm, week: e.target.value })}
-                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                        >
-                            {[...Array(20)].map((_, i) => (
-                                <option key={i} value={i + 1}>Tuần {i + 1}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <label className="block text-gray-700 font-semibold mb-1">Thứ</label>
-                        <select
-                            value={interviewForm.day}
-                            onChange={(e) => setInterviewForm({ ...interviewForm, day: e.target.value })}
-                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                        >
-                            {DAYS.map((d) => (
-                                <option key={d} value={d}>Thứ {d}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <label className="block text-gray-700 font-semibold mb-1">Tiết</label>
-                        <select
-                            value={interviewForm.startPeriod}
-                            onChange={(e) => setInterviewForm({ ...interviewForm, startPeriod: e.target.value })}
-                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                        >
-                            {PERIODS.map((p) => (
-                                <option key={p} value={p}>Tiết {p}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* MAX STUDENTS */}
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <label className="block text-gray-700 font-semibold mb-2">Số sinh viên tối đa</label>
-                    <input
-                        required
-                        type="number"
-                        min={1}
-                        value={interviewForm.maxStudents}
-                        onChange={(e) => setInterviewForm({ ...interviewForm, maxStudents: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-md text-sm"
-                    />
-                </div>
-
                 {/* TOPIC */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <label className="block text-gray-700 font-semibold mb-2">Chủ đề</label>
@@ -152,6 +69,91 @@ const CreateInterviewTab = ({ interviewForm, setInterviewForm, onSuccess }) => {
                         className="w-full p-3 border border-gray-300 rounded-md text-sm"
                     />
                 </div>
+                
+
+                {/* WEEK / DAY / PERIOD */}
+                <div className="flex flex-col sm:flex-row gap-8 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-1">Tuần</label>
+                        <select
+                            value={interviewForm.week}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, week: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        >
+                            {[...Array(20)].map((_, i) => (
+                                <option key={i} value={i + 1}>Tuần {i + 1}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-1">Thứ</label>
+                        <select
+                            value={interviewForm.day}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, day: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        >
+                            {DAYS.map((d) => (
+                                <option key={d} value={d}>Thứ {d}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-1">Tiết</label>
+                        <select
+                            value={interviewForm.startPeriod}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, startPeriod: e.target.value })}
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        >
+                            {PERIODS.map((p) => (
+                                <option key={p} value={p}>Tiết {p}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                {/* MODE + LOCATION */}
+                <div className="flex flex-col sm:flex-row gap-8 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-2">Hình thức</label>
+                        <select
+                            value={interviewForm.meetingMode}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, meetingMode: e.target.value })}
+                            className="w-full p-3 border border-gray-300 rounded-md text-sm"
+                        >
+                            <option value="Online">Online</option>
+                            <option value="Offline">Offline</option>
+                        </select>
+                    </div>
+
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-2">Địa điểm / Link</label>
+                        <input
+                            required
+                            type="text"
+                            value={interviewForm.location}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, location: e.target.value })}
+                            placeholder="Nhập phòng học hoặc link Google Meet"
+                            className="w-full p-3 border border-gray-300 rounded-md text-sm"
+                        />
+                    </div>
+                    {/* MAX STUDENTS */}
+                    <div className="flex-1">
+                        <label className="block text-gray-700 font-semibold mb-2">Số sinh viên tối đa</label>
+                        <input
+                            required
+                            type="number"
+                            min={1}
+                            value={interviewForm.maxStudents}
+                            onChange={(e) => setInterviewForm({ ...interviewForm, maxStudents: e.target.value })}
+                            className="w-full p-3 border border-gray-300 rounded-md text-sm"
+                        />
+                    </div>
+                </div>
+                
+
+                
 
                 {/* SUBMIT BUTTON */}
                 <button

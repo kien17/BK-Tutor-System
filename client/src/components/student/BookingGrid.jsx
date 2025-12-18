@@ -57,7 +57,6 @@ const BookingGrid = ({
             <LegendItem color="bg-yellow-400" label="Đã có lịch" />
             <LegendItem color="bg-purple-600" label="Chờ" />
             <LegendItem color="bg-blue-500" label="Đã duyệt" />
-            <LegendItem color="bg-gray-500" label="Đã hủy" />
             <LegendItem color="bg-indigo-600" label="Tư vấn nhóm" />
           </div>
         </div>
@@ -142,7 +141,7 @@ const BookingGrid = ({
 
 const LegendItem = ({ color, label }) => (
   <div className="flex items-center gap-1">
-    <span className={`w-3 h-3 rounded-sm ${color} border border-gray-300`} />
+    <span className={`w-3 h-3 rounded-sm ${color}`} />
     <span>{label}</span>
   </div>
 );
