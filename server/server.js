@@ -783,6 +783,12 @@ app.delete('/api/admin/reset-semester', async (req, res) => {
 
         console.log(`⚠️ ADMIN ${decoded.username} ĐANG RESET HỌC KỲ...`);
 
+        // 1️⃣ Xóa sinh viên đã đăng ký buổi tư vấn
+        await sql.query`DELETE FROM SessionParticipants`;
+
+        // 2️⃣ Xóa toàn bộ buổi tư vấn (Academic Sessions)
+        await sql.query`DELETE FROM AcademicSessions`;
+        
         // 1. Xóa tất cả các buổi hẹn/phỏng vấn
         await sql.query`DELETE FROM AcademicBookings`;
 
@@ -989,6 +995,414 @@ app.get('/api/tutors/:id/reviews-with-booking', async (req, res) => {
             reviews: result.recordset
         });
 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API TUTOR: TẠO BUỔI TƯ VẤN (AcademicSessions) ---
+app.post('/api/tutor/academic-session', async (req, res) => {
+    const {
+        week,
+        day,
+        startPeriod,
+        topic,
+        location,
+        meetingMode,
+        maxStudents,
+        description = null
+    } = req.body;
+
+    try {
+        /* ===== 0️⃣ AUTH ===== */
+        const token = req.headers.authorization;
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+        if (decoded.role !== 'tutor') {
+            return res.status(403).json({ message: 'Chỉ Tutor mới được tạo buổi tư vấn!' });
+        }
+
+        if (!maxStudents || maxStudents <= 0) {
+            return res.status(400).json({ message: 'Số lượng sinh viên không hợp lệ!' });
+        }
+
+        const endPeriod = startPeriod; // cố định 1 tiết
+
+        /* ===== 1️⃣ CHECK TRÙNG AcademicSessions ===== */
+        const sessionClash = await sql.query`
+            SELECT 1
+            FROM AcademicSessions
+            WHERE TutorID = ${decoded.id}
+              AND WeekNumber = ${week}
+              AND DayOfWeek = ${day}
+              AND StartPeriod = ${startPeriod}
+              AND Status IN ('open', 'full')
+        `;
+
+        if (sessionClash.recordset.length > 0) {
+            return res.status(400).json({
+                message: 'Bạn đã có buổi tư vấn khác ở thời điểm này!'
+            });
+        }
+
+        /* ===== 2️⃣ CHECK TRÙNG AcademicBookings ===== */
+        const bookingClash = await sql.query`
+            SELECT 1
+            FROM AcademicBookings
+            WHERE TutorID = ${decoded.id}
+              AND WeekNumber = ${week}
+              AND DayOfWeek = ${day}
+              AND ${startPeriod} BETWEEN StartPeriod AND EndPeriod
+              AND Status NOT IN ('cancelled', 'rejected')
+        `;
+
+        if (bookingClash.recordset.length > 0) {
+            return res.status(400).json({
+                message: 'Thời gian này đã có lịch tư vấn cá nhân!'
+            });
+        }
+
+        /* ===== 3️⃣ INSERT SESSION ===== */
+        const result = await sql.query`
+            INSERT INTO AcademicSessions (
+                TutorID,
+                WeekNumber, DayOfWeek,
+                StartPeriod, EndPeriod,
+                Topic, Description,
+                Location, MeetingMode,
+                MaxStudents, Status
+            )
+            OUTPUT INSERTED.SessionID
+            VALUES (
+                ${decoded.id},
+                ${week}, ${day},
+                ${startPeriod}, ${endPeriod},
+                ${topic}, ${description},
+                ${location}, ${meetingMode},
+                ${maxStudents}, 'open'
+            )
+        `;
+
+        res.json({
+            message: 'Đã tạo buổi tư vấn thành công!',
+            sessionId: result.recordset[0].SessionID
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// --- API STUDENT: ĐĂNG KÝ BUỔI TƯ VẤN ---
+app.post('/api/student/sessions/:sessionId/register', async (req, res) => {
+    const { sessionId } = req.params;
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: 'Missing token' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+    if (decoded.role !== 'student') {
+        return res.status(403).json({ message: 'Chỉ sinh viên mới được đăng ký!' });
+    }
+
+    const transaction = new sql.Transaction();
+
+    try {
+        await transaction.begin();
+
+        const request = new sql.Request(transaction);
+
+        /* 1️⃣ Lock session */
+        const sessionRes = await request.query(`
+            SELECT * FROM AcademicSessions WITH (UPDLOCK, ROWLOCK)
+            WHERE SessionID = ${sessionId}
+        `);
+
+        if (sessionRes.recordset.length === 0) {
+            await transaction.rollback();
+            return res.status(404).json({ message: 'Buổi tư vấn không tồn tại!' });
+        }
+
+        const session = sessionRes.recordset[0];
+
+        if (session.Status !== 'open') {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Buổi tư vấn đã đủ người hoặc bị hủy!' });
+        }
+
+        /* 2️⃣ Check sinh viên đã đăng ký chưa */
+        const existRes = await request.query(`
+            SELECT 1 FROM SessionParticipants
+            WHERE SessionID = ${sessionId}
+              AND StudentID = ${decoded.id}
+        `);
+
+        if (existRes.recordset.length > 0) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Bạn đã đăng ký buổi này rồi!' });
+        }
+
+        /* 3️⃣ Check trùng lịch sinh viên */
+        const clash = await request.query(`
+            SELECT 1
+            FROM SessionParticipants sp
+            JOIN AcademicSessions s ON sp.SessionID = s.SessionID
+            WHERE sp.StudentID = ${decoded.id}
+              AND s.WeekNumber = ${session.WeekNumber}
+              AND s.DayOfWeek = ${session.DayOfWeek}
+              AND s.StartPeriod = ${session.StartPeriod}
+              AND s.Status IN ('open', 'full')
+        `);
+
+        if (clash.recordset.length > 0) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Bạn đã có lịch khác vào thời điểm này!' });
+        }
+
+        /* 4️⃣ Đếm slot */
+        const countRes = await request.query(`
+            SELECT COUNT(*) AS cnt
+            FROM SessionParticipants
+            WHERE SessionID = ${sessionId}
+        `);
+
+        if (countRes.recordset[0].cnt >= session.MaxStudents) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Buổi tư vấn đã đủ số lượng!' });
+        }
+
+        /* 5️⃣ Insert participant */
+        await request.query(`
+            INSERT INTO SessionParticipants (SessionID, StudentID, Status)
+            VALUES (${sessionId}, ${decoded.id}, 'registered')
+        `);
+
+        /* 6️⃣ Nếu full → update session */
+        if (countRes.recordset[0].cnt + 1 >= session.MaxStudents) {
+            await request.query(`
+                UPDATE AcademicSessions SET Status = 'full'
+                WHERE SessionID = ${sessionId}
+            `);
+        }
+
+        /* 7️⃣ Thông báo */
+        await request.query(`
+            INSERT INTO Notifications (UserID, Message)
+            VALUES 
+            (${session.TutorID}, N'🎓 Có sinh viên đăng ký buổi tư vấn "${session.Topic}"'),
+            (${decoded.id}, N'✅ Bạn đã đăng ký thành công buổi tư vấn "${session.Topic}"')
+        `);
+
+        await transaction.commit();
+        res.json({ message: 'Đăng ký buổi tư vấn thành công!' });
+
+    } catch (err) {
+        await transaction.rollback();
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API TUTOR: LẤY DANH SÁCH BUỔI TƯ VẤN ---
+app.get('/api/tutor/academic-sessions', async (req, res) => {
+    try {
+        const { week } = req.query;
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+            return res.status(401).json({ message: 'Missing token' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+        if (decoded.role !== 'tutor') {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+
+        const weekNumber = parseInt(week, 10);
+        if (isNaN(weekNumber)) {
+            return res.status(400).json({ message: 'Invalid week number' });
+        }
+
+        const result = await sql.query`
+            SELECT 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Description,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status,
+                COUNT(p.StudentID) AS CurrentStudents
+            FROM AcademicSessions s
+            LEFT JOIN SessionParticipants p 
+                ON s.SessionID = p.SessionID
+            WHERE s.TutorID = ${decoded.id}
+              AND s.WeekNumber = ${weekNumber}
+              AND s.Status != 'cancelled'
+            GROUP BY 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Description,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status
+        `;
+
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Academic Sessions API error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API STUDENT: LẤY BUỔI TƯ VẤN THEO TUTOR ---
+app.get('/api/tutor/:tutorId/academic-sessions', async (req, res) => {
+    try {
+        const { tutorId } = req.params;
+        const { week } = req.query;
+
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ message: 'Missing token' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+        if (decoded.role !== 'student') {
+            return res.status(403).json({ message: 'Chỉ sinh viên mới được xem lịch tutor' });
+        }
+
+        const weekNumber = parseInt(week, 10);
+        if (isNaN(weekNumber)) {
+            return res.status(400).json({ message: 'Invalid week number' });
+        }
+
+        const result = await sql.query`
+            SELECT 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Description,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status,
+                COUNT(p.StudentID) AS CurrentStudents
+            FROM AcademicSessions s
+            LEFT JOIN SessionParticipants p 
+                ON s.SessionID = p.SessionID
+            WHERE s.TutorID = ${tutorId}
+              AND s.WeekNumber = ${weekNumber}
+              AND s.Status IN ('open', 'full')
+            GROUP BY 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Description,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status
+            ORDER BY s.DayOfWeek, s.StartPeriod
+        `;
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        console.error('Student Academic Sessions API error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- API STUDENT: LẤY DANH SÁCH BUỔI TƯ VẤN ---
+app.get('/api/student/academic-sessions', async (req, res) => {
+    try {
+        const { tutorId, week } = req.query;
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+            return res.status(401).json({ message: 'Missing token' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, 'BKTUTOR_SECRET_KEY');
+
+        if (decoded.role !== 'student') {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+
+        const result = await sql.query`
+            SELECT 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status,
+                COUNT(p.StudentID) AS CurrentStudents,
+                MAX(
+                    CASE 
+                        WHEN sp.StudentID IS NOT NULL THEN 1 
+                        ELSE 0 
+                    END
+                ) AS IsRegistered
+            FROM AcademicSessions s
+            LEFT JOIN SessionParticipants p 
+                ON s.SessionID = p.SessionID
+            LEFT JOIN SessionParticipants sp 
+                ON s.SessionID = sp.SessionID
+                AND sp.StudentID = ${decoded.id}
+            WHERE s.TutorID = ${tutorId}
+              AND s.WeekNumber = ${week}
+              AND s.Status != 'cancelled'
+            GROUP BY 
+                s.SessionID,
+                s.TutorID,
+                s.WeekNumber,
+                s.DayOfWeek,
+                s.StartPeriod,
+                s.EndPeriod,
+                s.Topic,
+                s.Location,
+                s.MeetingMode,
+                s.MaxStudents,
+                s.Status
+        `;
+
+        res.json(result.recordset);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

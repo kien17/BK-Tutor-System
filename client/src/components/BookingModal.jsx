@@ -1,59 +1,41 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 const BookingModal = ({ isOpen, onClose, title, children, actions }) => {
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-            }}
-            onClick={onClose} // Click vào backdrop sẽ đóng modal
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn"
         >
             <div
-                style={{
-                    background: 'white',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    width: '90%',
-                    maxWidth: '500px',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-                    animation: 'fadeIn 0.2s',
-                }}
-                onClick={(e) => e.stopPropagation()} // Ngăn click bên trong modal lan ra backdrop
+                className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative transform transition-transform duration-200 scale-95 sm:scale-100 hover:scale-100"
+                onClick={(e) => e.stopPropagation()} // tránh click đóng khi nhấn trong modal
             >
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: 15,
-                        borderBottom: '1px solid #eee',
-                        paddingBottom: 10,
-                    }}
-                >
-                    <h3 style={{ margin: 0, color: '#004aad' }}>{title}</h3>
+                {/* Header */}
+                <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                    <h3 className="text-lg font-bold text-blue-700">{title}</h3>
                     <button
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}
+                        aria-label="Close modal"
+                        className="text-gray-400 hover:text-gray-700 text-2xl font-bold transition"
                     >
                         ×
                     </button>
                 </div>
 
-                <div style={{ marginBottom: 20 }}>{children}</div>
+                {/* Content */}
+                <div className="mb-5 space-y-4">{children}</div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>{actions}</div>
+                {/* Actions */}
+                {actions && (
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 mt-2">
+                        {actions}
+                    </div>
+                )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
